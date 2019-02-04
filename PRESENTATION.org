@@ -1,0 +1,29 @@
+* Get stuff - /shrug/ use your package manager.
+
+** Official docs:
+
+  https://github.com/purescript/documentation/blob/master/guides/Getting-Started.md
+
+** I did not use them. We're gonna use spago today:
+
+  https://github.com/spacchetti/spago
+  
+** One thing to note about licenses - purescript itself uses some proprietary components
+
+* Purescript
+
+** A small-ish Haskell-like ML family language that compiles to readable JavaScript
+
+*** I'm going to assume you know and love Haskell, so here's how they are similar
+
+**** System F
+
+**** Two semicolons for type annotations
+
+*** Here's how they differ
+
+**** Typeclass heirarchies slightly different
+
+**** Explicit forall
+
+**** Row types

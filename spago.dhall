@@ -8,6 +8,7 @@ You can edit this file as you like.
     [ "effect"
     , "console"
     , "psci-support"
+    , "halogen"
     ]
 , packages =
     ./packages.dhall
