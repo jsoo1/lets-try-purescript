@@ -6,7 +6,6 @@
 module Main where
 
 import Data.Proxy (Proxy(..))
-import Data.Text (Text(..))
 import Network.Wai.Handler.Warp (run)
 import Options.Generic (Generic, ParseRecord, getRecord)
 import Servant (Raw, serve, serveDirectoryWebApp)

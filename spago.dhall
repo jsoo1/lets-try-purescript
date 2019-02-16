@@ -7,9 +7,10 @@ You can edit this file as you like.
 , dependencies =
     [ "effect"
     , "console"
-    , "psci-support"
     , "halogen"
+    , "halogen-css"
     , "halogen-vdom"
+    , "psci-support"
     ]
 , packages =
     ./packages.dhall
