@@ -3,6 +3,7 @@ BIN=$(PREFIX)/bin
 SHARE=$(PREFIX)/share
 BUILD=$(PREFIX)/.build
 BINARY_NAME=try-purescript
+MAIN ?= First.Main
 
 all: clean static
 
@@ -12,7 +13,7 @@ start: ensure-bin server
 static: bundle copy
 
 bundle: ensure-static
-	spago bundle --main Main --to $(SHARE)/index.js
+	spago bundle --main $(MAIN) --to $(SHARE)/index.js
 
 copy: ensure-static
 	cp -v index.html $(SHARE)/index.html
