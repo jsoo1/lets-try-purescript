@@ -4,26 +4,44 @@
 
   https://github.com/purescript/documentation/blob/master/guides/Getting-Started.md
 
-** I did not use them. We're gonna use spago today:
+** Official recommended tooling is Pulp/Bower and the purescript compiler purs.
+
+   I did not use them. We're gonna use spago today:
 
   https://github.com/spacchetti/spago
   
-** One thing to note about licenses - purescript itself uses some proprietary components
-
 * Purescript
 
 ** A small-ish Haskell-like ML family language that compiles to readable JavaScript
 
 *** I'm going to assume you know and love Haskell, so here's how they are similar
 
-**** System F
+**** System F ω plus some stuff
 
 **** Two semicolons for type annotations
 
 *** Here's how they differ
 
-**** Typeclass heirarchies slightly different
+**** Typeclass heirarchies different
 
 **** Explicit forall
 
 **** Row types
+
+**** Strict evaluation
+
+** An excellent playground for writing frontend architectures
+
+  - Thermite - wrapper around react
+  - Pux - slightly more principled wrapper around react
+  - Comonad things by Phil Freeman
+  - choco pie - a cycleJS like thing
+  - et cetera
+
+* Halogen
+
+** A library for creating managed-state, virtual-dom rendered frontend applications
+
+** Maintained by slamdata
+
+** 
