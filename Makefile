@@ -17,6 +17,7 @@ bundle: ensure-static
 
 copy: ensure-static
 	cp -v index.html $(SHARE)/index.html
+	cp -v index.css $(SHARE)/index.css
 
 clean: ensure-bin ensure-static
 	rm -rfv $(SHARE)/*

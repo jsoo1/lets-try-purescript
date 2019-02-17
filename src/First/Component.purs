@@ -5,16 +5,9 @@ module First.Component
        ) where
 
 
-import CSS (StyleM)
-import CSS as CSS
-import CSS.Font as Font
-import CSS.Geometry (lineHeight)
-import CSS.Size (px)
-import Data.NonEmpty as NonEmpty
 import Data.Maybe (Maybe(..))
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.CSS (style)
 import Halogen.HTML.Events as HE
 import Prelude
 
@@ -52,24 +45,13 @@ component =
 -- | Users of elm will not feel out of place, here.
 render :: State -> H.ComponentHTML Query
 render s =
-  HH.div [ style normalFont ]
-    [ HH.div
-      [ style do Font.color $ if s then CSS.blue else CSS.red ]
+  HH.div []
+    [ HH.div []
       [ HH.text $ show s ]
     , HH.button [ HE.onClick $ HE.input_ Toggle ]
         [ HH.text "toggle"
         ]
     ]
-
-
--- | Make the font nicer
--- | StyleM is a nice styling dsl
-normalFont :: StyleM Unit
-normalFont = do
-  lineHeight (px 24.0)
-  Font.fontSize (px 24.0)
-  Font.fontFamily [ "CMUSerifRoman" ]
-    $ NonEmpty.singleton Font.sansSerif
 
 
 -- | Halogen uses a free monad to describe your app
