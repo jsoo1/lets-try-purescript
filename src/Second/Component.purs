@@ -5,13 +5,12 @@ module Second.Component
        ) where
 
 
-import Prelude
-
 import CSS (StyleM
            , display
            , height
            , justifyContent
            , flex
+           , padding
            , paddingBottom
            , paddingTop
            )
@@ -39,6 +38,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.CSS (style)
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties (class_)
+import Prelude
 
 
 -- | Let's add some styling
@@ -60,8 +60,8 @@ render s =
             flexBasis (pct 0.0)
             flexGrow 1
             flexShrink 1
+            padding (rem 1.25) (rem 1.25) (rem 1.25) (rem 1.25)
             display flex
-            justifyContent $ JustifyContentValue $ value "space-around"
             flexDirection column
         ]
         [ HH.div
@@ -83,6 +83,7 @@ render s =
         ]
     ]
 
+
 -- | Make the font nicer
 -- | StyleM is a nice styling dsl
 -- | We used it above (style do ...)
@@ -100,10 +101,11 @@ normalFont = do
 eval :: forall m . Query ~> H.ComponentDSL State Query Message m
 eval q =
   case q of
-    Toggle x -> do
+    Toggle next -> do
       state <- H.get
       H.put $ not state
-      pure x
+      H.raise $ Toggled $ not state
+      pure next
     WhatIsItNow respond -> do
       state <- H.get
       pure $ respond state

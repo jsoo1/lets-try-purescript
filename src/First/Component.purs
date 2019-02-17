@@ -60,10 +60,11 @@ render s =
 eval :: forall m . Query ~> H.ComponentDSL State Query Message m
 eval q =
   case q of
-    Toggle x -> do
+    Toggle next -> do
       state <- H.get
       H.put $ not state
-      pure x
+      H.raise $ Toggled $ not state
+      pure next
     WhatIsItNow respond -> do
       state <- H.get
       pure $ respond state

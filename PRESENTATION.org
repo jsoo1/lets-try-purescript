@@ -1,15 +1,17 @@
-* Get stuff - /shrug/ use your package manager.
+* Get stuff - npm, binaries (including Windows), homebrew all available.
 
 ** Official docs:
 
-  https://github.com/purescript/documentation/blob/master/guides/Getting-Started.md
+  https://github.com/purescript/documentation
 
 ** Official recommended tooling is Pulp/Bower and the purescript compiler purs.
 
    I did not use them. We're gonna use spago today:
 
   https://github.com/spacchetti/spago
-  
+
+** Editor tooling available for atom, VSCode, vim, emacs, etc
+
 * Purescript
 
 ** A small-ish Haskell-like ML family language that compiles to readable JavaScript
@@ -30,18 +32,28 @@
 
 **** Strict evaluation
 
+**** Nicer records
+
 ** An excellent playground for writing frontend architectures
 
   - Thermite - wrapper around react
   - Pux - slightly more principled wrapper around react
-  - Comonad things by Phil Freeman
+  - Comonad experiments by Phil Freeman
   - choco pie - a cycleJS like thing
   - et cetera
 
 * Halogen
 
-** A library for creating managed-state, virtual-dom rendered frontend applications
+** A library for creating managed-state frontend applications
 
-** Maintained by slamdata
+** (Theoretically) pluggable rendering engines (HTML, React?, iOS? android?)
 
-** 
+** Maintained and used by slamdata
+
+** Comparing to elm: Casually speaking - Halogen uses Free where elm (and redux) use something like CoFree
+   
+   You will notice they feel dual to each other as we go
+
+** Following is a demo that mostly covers the halogen tutorial
+
+   https://github.com/slamdata/purescript-halogen/tree/v4.0.0/docs/

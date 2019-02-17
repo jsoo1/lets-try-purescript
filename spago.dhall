@@ -5,7 +5,8 @@ You can edit this file as you like.
 { name =
     "try-purescript"
 , dependencies =
-    [ "effect"
+    [ "affjax"
+    , "effect"
     , "console"
     , "halogen"
     , "halogen-css"
