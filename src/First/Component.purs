@@ -1,9 +1,12 @@
 module First.Component
-       ( Query
-       , Message
+       ( Query(..)
+       , State
+       , Input
+       , Message(..)
        , component
+       , initialState
+       , eval
        ) where
-
 
 import Data.Maybe (Maybe(..))
 import Halogen as H
@@ -11,21 +14,17 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Prelude
 
-
 -- | Halogen uses a managed state approach
 -- | Each render is a function of State
 type State = Boolean
 
-
 initialState :: State
 initialState = false
-
 
 -- | Halogen uses something like a free monad to describe your app
 -- | Query is the "language" that you will later "interpret"
 data Query a = Toggle a
              | WhatIsItNow (Boolean -> a)
-
 
 -- | Create a halogen component
 -- | Check out this beautiful record syntax!
@@ -37,7 +36,6 @@ component =
     , eval
     , receiver : const Nothing
     }
-
 
 -- | Turn your state into some v-dom
 -- | Note that you can change which HTML renderer you might use!
@@ -53,7 +51,6 @@ render s =
         ]
     ]
 
-
 -- | Halogen uses a free monad to describe your app
 -- | eval is how you interpret the language introduced by Query
 -- | Think update for elm or reducers for redux - but in reverse
@@ -68,7 +65,6 @@ eval q =
     WhatIsItNow respond -> do
       state <- H.get
       pure $ respond state
-
 
 -- | Ignore Input and Message for now
 type Input = Unit

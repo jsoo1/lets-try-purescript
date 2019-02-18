@@ -1,9 +1,4 @@
-module Second.Component
-       ( Query
-       , Message
-       , component
-       ) where
-
+module Second.Component (component) where
 
 import CSS (StyleM
            , display
@@ -33,6 +28,7 @@ import CSS.Property (value)
 import CSS.Size (pct, px, rem, vh)
 import Data.Maybe (Maybe(..))
 import Data.NonEmpty as NonEmpty
+import First.Component as First
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.CSS (style)
@@ -40,12 +36,11 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties (class_)
 import Prelude
 
-
 -- | Let's add some styling
 -- | This is css and halogen-css
 -- | They thought of most everything
 -- | If you need an escape hatch (like for pseudo elements) you can use class_
-render :: State -> H.ComponentHTML Query
+render :: First.State -> H.ComponentHTML First.Query
 render s =
   HH.div
     [ style do
@@ -77,12 +72,11 @@ render s =
         , HH.button
             [ class_ $ HH.ClassName "btn"
             , style do alignSelf $ AlignSelfValue $ value "center"
-            , HE.onClick $ HE.input_ Toggle ]
+            , HE.onClick $ HE.input_ First.Toggle ]
             [ HH.text "toggle"
             ]
         ]
     ]
-
 
 -- | Make the font nicer
 -- | StyleM is a nice styling dsl
@@ -94,43 +88,13 @@ normalFont = do
   Font.fontFamily [ "CMUSerifRoman" ]
     $ NonEmpty.singleton Font.sansSerif
 
-
 -- Same as before
 
-
-eval :: forall m . Query ~> H.ComponentDSL State Query Message m
-eval q =
-  case q of
-    Toggle next -> do
-      state <- H.get
-      H.put $ not state
-      H.raise $ Toggled $ not state
-      pure next
-    WhatIsItNow respond -> do
-      state <- H.get
-      pure $ respond state
-
-
-type Input = Unit
-data Message = Toggled Boolean
-
-
-type State = Boolean
-
-
-initialState :: State
-initialState = false
-
-
-data Query a = Toggle a
-             | WhatIsItNow (Boolean -> a)
-
-
-component :: forall m . H.Component HH.HTML Query Input Message m
+component :: forall m . H.Component HH.HTML First.Query First.Input First.Message m
 component =
   H.component
-    { initialState : const initialState
+    { initialState : const First.initialState
     , render
-    , eval
+    , eval : First.eval
     , receiver : const Nothing
     }

@@ -6,7 +6,6 @@ import Halogen.VDom.Driver as Driver
 import Prelude
 import Second.Component as Second
 
-
 main :: Effect Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody
