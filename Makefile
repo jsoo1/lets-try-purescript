@@ -4,11 +4,12 @@ SHARE=$(PREFIX)/share
 BUILD=$(PREFIX)/.build
 BINARY_NAME=try-purescript
 MAIN ?= First.Main
+PORT ?= 8080
 
 all: clean-static static
 
 start: ensure-bin clean-bin server
-	$(BIN)/$(BINARY_NAME) --from $(SHARE)
+	$(BIN)/$(BINARY_NAME) --from $(SHARE) --on $(PORT) --users $(SHARE)/users.json
 
 static: bundle copy
 
@@ -22,6 +23,7 @@ build:
 copy: ensure-static
 	cp -v index.html $(SHARE)/index.html
 	cp -v index.css $(SHARE)/index.css
+	cp -v users.json $(SHARE)/users.json
 
 clean-static: ensure-bin ensure-static
 	rm -rfv $(SHARE)/*
