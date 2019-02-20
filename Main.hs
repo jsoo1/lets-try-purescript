@@ -28,9 +28,9 @@ data Options =
   deriving (Generic, ParseRecord)
 
 type LetsTryPureScript = "user" :> ReqBody '[JSON] Username :> Get '[JSON] (Maybe User)
-  :<|> "user" :> Get '[JSON] (Map Username User)
   :<|> "user" :> ReqBody '[JSON] User :> Post '[JSON] User
-  :<|> "user" :> ReqBody '[JSON] Username :> Delete '[JSON] ()
+  :<|> "user" :> ReqBody '[JSON] Username :> DeleteNoContent '[JSON] NoContent
+  :<|> "user" :> "all" :> Get '[JSON] (Map Username User)
   :<|> Raw
 
 main :: IO ()
@@ -38,6 +38,11 @@ main = do
   Options {..} <- getRecord "serve a static directory and a users \"database\""
   putStrLn $ "running on " <> show on
   run on $ serve letsTryPureScript $ server from users
+
+  where
+    letsTryPureScript :: Proxy LetsTryPureScript
+    letsTryPureScript = Proxy
+
 
 data User =
   User
@@ -49,15 +54,12 @@ data User =
   }
   deriving (Generic, FromJSON, ToJSON)
 
-letsTryPureScript :: Proxy LetsTryPureScript
-letsTryPureScript = Proxy
-
 server :: FilePath -> FilePath -> Server LetsTryPureScript
 server staticDir usersFile =
   getUser usersFile
-  :<|> getUsersFile usersFile
   :<|> postUser usersFile
   :<|> deleteUser usersFile
+  :<|> getUsersFile usersFile
   :<|> serveDirectoryWebApp staticDir
 
   where
@@ -78,14 +80,14 @@ server staticDir usersFile =
           liftIO $ AE.encodeFile p' $ Map.insert (username u) u us
           pure u
 
-    deleteUser :: FilePath -> Username -> Handler ()
+    deleteUser :: FilePath -> Username -> Handler NoContent
     deleteUser p username =
       delete p username =<< getUsersFile p
       where
-        delete :: FilePath -> Username -> Map Username User -> Handler ()
+        delete :: FilePath -> Username -> Map Username User -> Handler NoContent
         delete p' u us = do
           liftIO $ AE.encodeFile p' $ Map.delete u us
-          pure ()
+          pure NoContent
 
     serverError :: String -> ServantErr
     serverError s =
