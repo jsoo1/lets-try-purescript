@@ -27,8 +27,10 @@ data Options =
   }
   deriving (Generic, ParseRecord)
 
-type LetsTryPureScript = "users" :> Get '[JSON] (Map Username User)
+type LetsTryPureScript = "user" :> ReqBody '[JSON] Username :> Get '[JSON] (Maybe User)
+  :<|> "user" :> Get '[JSON] (Map Username User)
   :<|> "user" :> ReqBody '[JSON] User :> Post '[JSON] User
+  :<|> "user" :> ReqBody '[JSON] Username :> Delete '[JSON] ()
   :<|> Raw
 
 main :: IO ()
@@ -40,10 +42,10 @@ main = do
 data User =
   User
   { username  :: Username
-  , name      :: Name
-  , avatarUrl :: ImgSrc
-  , url       :: UserURL
-  , bio       :: Bio
+  , name      :: Text
+  , avatarUrl :: Text
+  , url       :: Text
+  , bio       :: Text
   }
   deriving (Generic, FromJSON, ToJSON)
 
@@ -52,47 +54,47 @@ letsTryPureScript = Proxy
 
 server :: FilePath -> FilePath -> Server LetsTryPureScript
 server staticDir usersFile =
-  getUsers usersFile :<|> postUser usersFile :<|> serveDirectoryWebApp staticDir
+  getUser usersFile
+  :<|> getUsersFile usersFile
+  :<|> postUser usersFile
+  :<|> deleteUser usersFile
+  :<|> serveDirectoryWebApp staticDir
 
-serverError :: String -> ServantErr
-serverError s =
-  ServantErr
-  { errHTTPCode = 500
-  , errReasonPhrase = s
-  , errBody = ""
-  , errHeaders = []
-  }
+  where
+    getUsersFile :: FilePath -> Handler (Map Username User)
+    getUsersFile p =
+      either (throwError . serverError) pure =<< liftIO (AE.eitherDecodeFileStrict p :: IO (Either String (Map Username User)))
 
-getUsersFile :: FilePath -> IO (Either String (Map Username User))
-getUsersFile p =
-  AE.eitherDecodeFileStrict p :: IO (Either String (Map Username User))
+    getUser :: FilePath -> Username -> Handler (Maybe User)
+    getUser p u =
+      Map.lookup u <$> getUsersFile p
 
-getUsers :: FilePath -> Handler (Map Username User)
-getUsers p =
-  either (throwError . serverError) pure =<< liftIO (getUsersFile p)
+    postUser :: FilePath -> User -> Handler User
+    postUser p user =
+      updateUser p user =<< getUsersFile p
+      where
+        updateUser :: FilePath -> User -> Map Username User -> Handler User
+        updateUser p' u us = do
+          liftIO $ AE.encodeFile p' $ Map.insert (username u) u us
+          pure u
 
-postUser :: FilePath -> User -> Handler User
-postUser p user =
-  either (throwError . serverError) (updateUser user) =<< liftIO (getUsersFile p)
-    where
-      updateUser :: User -> Map Username User -> Handler User
-      updateUser u us = do
-        liftIO $ AE.encodeFile p $ Map.insert (username u) u us
-        pure u
+    deleteUser :: FilePath -> Username -> Handler ()
+    deleteUser p username =
+      delete p username =<< getUsersFile p
+      where
+        delete :: FilePath -> Username -> Map Username User -> Handler ()
+        delete p' u us = do
+          liftIO $ AE.encodeFile p' $ Map.delete u us
+          pure ()
 
--------------------- Plumbing --------------------
+    serverError :: String -> ServantErr
+    serverError s =
+      ServantErr
+      { errHTTPCode = 500
+      , errReasonPhrase = s
+      , errBody = ""
+      , errHeaders = []
+      }
 
 newtype Username = Username Text
-  deriving (Eq, Ord, Show, Generic, FromJSON, FromJSONKey, ToJSON, ToJSONKey)
-
-newtype ImgSrc = ImgSrc Text
-  deriving (Eq, Ord, Show, Generic, FromJSON, ToJSON)
-
-newtype UserURL = UserURL Text
-  deriving (Eq, Ord, Show, Generic, FromJSON, ToJSON)
-
-newtype Name = Name Text
-  deriving (Eq, Ord, Show, Generic, FromJSON, ToJSON)
-
-newtype Bio = Bio Text
-  deriving (Eq, Ord, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Ord, Generic, ToJSON, ToJSONKey, FromJSON, FromJSONKey)
