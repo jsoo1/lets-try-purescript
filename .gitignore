@@ -9,5 +9,7 @@
 /.psa*
 /.spago
 .build/
+.cabal-sandbox/
 bin/
 share/
+dist/

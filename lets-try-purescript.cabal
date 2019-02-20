@@ -1,0 +1,29 @@
+name:                lets-try-purescript
+version:             0.1.0.0
+synopsis:            A small demo for purescript/halogen
+license:             GPL-2
+license-file:        LICENSE
+author:              John Soo
+maintainer:          jsoo1@asu.edu
+category:            Web
+build-type:          Simple
+extra-source-files:  README.org
+cabal-version:       >=1.10
+
+executable lets-try-purescript
+  main-is:             Main.hs
+  other-extensions:    DataKinds
+                     , DeriveAnyClass
+                     , DeriveGeneric
+                     , OverloadedStrings
+                     , RecordWildCards
+                     , TypeOperators
+  build-depends: aeson >=1.4.2.0 && <5
+               , base >=4.12 && <4.13
+               , containers >=0.6 && <0.7
+               , optparse-generic >=1.3.0 && <1.4
+               , servant-server >=0.15 && <0.16
+               , text >=1.2 && <1.3
+               , warp >=3.2.26 && <3.3
+  hs-source-dirs:      .
+  default-language:    Haskell2010
