@@ -1,4 +1,4 @@
-module Third.Style ( col, row, paragraph, code, text, cmuSerif, fontSize) where
+module Third.Style ( col, row, paragraph, caption, code, text, cmuSerif, fontSize) where
 
 import Prelude
 import CSS ( StyleM
@@ -43,6 +43,12 @@ paragraph = do
   text
   cmuSerif
   fontSize (px 24.0)
+
+caption :: StyleM Unit
+caption = do
+  text
+  cmuSerif
+  fontSize (px 18.0)
 
 code :: StyleM Unit
 code = do

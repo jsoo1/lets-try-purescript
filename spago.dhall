@@ -6,6 +6,7 @@ You can edit this file as you like.
     "try-purescript"
 , dependencies =
     [ "affjax"
+    , "argonaut"
     , "effect"
     , "console"
     , "halogen"

@@ -15,17 +15,21 @@ import Affjax as AX
 import Affjax.ResponseFormat (ResponseFormatError)
 import Affjax.ResponseFormat as AXResponse
 import Third.HTML as HTML
-import Third.Style as S
+import Third.Style as Style
 import Web.UIEvent.KeyboardEvent as Key
 import Prelude
 
+-- | Some string we get back from github
 newtype UserDetails = UserDetails String
 
+-- | A request could fail
 type Response = Either ResponseFormatError UserDetails
 
-type State = { username :: String
-             , loading :: Boolean
-             , response :: Maybe Response
+-- | New state:
+-- |
+type State = { username :: String -- a string to type into
+             , loading :: Boolean -- whether we are loading
+             , response :: Maybe Response -- something we might get back from github
              }
 
 type Input = Unit
@@ -46,9 +50,11 @@ component =
     , receiver: const Nothing
     }
 
+-- | A form to query the github users api
+-- | We're using some functions we made for styling in Third.Style and Third.HTML
 render :: State -> H.ComponentHTML Query
 render { username, loading, response } =
-  HH.div [ style S.col ]
+  HH.div [ style Style.col ]
   [ HTML.input "username"
     [ HP.disabled loading
     , HP.value username
@@ -70,23 +76,22 @@ render { username, loading, response } =
     ]
   , case response of
       Nothing ->
-        HH.div [ style S.paragraph ]
+        HH.div [ style Style.paragraph ]
         [ HH.text "search for a username to get something here"
         ]
-      Just (Left e) ->
+      Just res ->
         HH.pre_
-        [ HH.code [ style S.code ]
-          [ HH.text $ AXResponse.printResponseFormatError e
-          ]
-        ]
-      Just (Right (UserDetails details)) ->
-        HH.pre_
-        [ HH.code [ style S.code ]
-          [ HH.text $ details
+        [ HH.code [ style Style.code ]
+          [ HH.text $
+            case res of
+              Left e -> AXResponse.printResponseFormatError e
+              Right (UserDetails details) -> details
           ]
         ]
     ]
 
+-- | Now we are doing some effects in Aff - the async version of Effect
+-- | This uses the Affjax library which seems pretty nice
 eval :: Query ~> H.ComponentDSL State Query Message Aff
 eval q =
   case q of
