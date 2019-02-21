@@ -125,9 +125,9 @@ eval (Fetch next) = do
     H.liftAff
     $ AX.get AXResponse.json
     $ "https://api.github.com/users/" <> show username
-  let user = lmap JSONErr <<< decodeJson =<< lmap ResponseErr response.body
-  H.put $ Finished $ lmap (\err -> {username, err}) user
-  H.raise $ Fetched $ user
+  let res = lmap JSONErr <<< decodeJson =<< lmap ResponseErr response.body
+  H.put $ Finished $ lmap (\err -> {username, err}) res
+  H.raise $ Fetched $ res
   pure next
 
     where

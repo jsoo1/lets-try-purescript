@@ -1,11 +1,14 @@
 module Fourth.Data (User(..), Username(..)) where
 
-import Data.Argonaut.Core
-import Data.Argonaut.Decode
-import Data.Argonaut.Encode
-import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
+import Data.Argonaut.Core (toString)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
+import Data.Argonaut.Encode (class EncodeJson)
+import Data.Argonaut.Encode.Generic.Rep (genericEncodeJson)
 import Prelude
+
+import Data.Either (Either(..))
+import Data.Generic.Rep (class Generic)
+import Data.Maybe (Maybe(..))
 
 data User =
   User
@@ -16,13 +19,16 @@ data User =
   , bio       :: String
   }
 
+-- | Newtypes!
 newtype Username = Username String
 
+-- | Named instances!
 derive instance eqUsername :: Eq Username
 derive instance ordUsername :: Ord Username
 instance showUsername :: Show Username where
-  show (Username s) = show s
+  show (Username s) = s
 
+-- | This is how json decoding looks, done manually
 instance decodeJsonUsername :: DecodeJson Username where
   decodeJson j =
     case toString j of
@@ -38,3 +44,13 @@ instance decodeJsonUser :: DecodeJson User where
     url <- x .: "url"
     bio <- x .: "bio"
     pure $ User { username, name, avatarUrl, url, bio }
+
+-- | But why do all that, when you can derive it?
+derive instance genericRepUsername :: Generic Username _
+derive instance genericRepUser :: Generic User _
+
+instance encodeJsonUsername :: EncodeJson Username where
+  encodeJson = genericEncodeJson 
+
+instance encodeJsonUser :: EncodeJson User where
+  encodeJson = genericEncodeJson
