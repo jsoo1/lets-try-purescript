@@ -9,7 +9,7 @@ import CSS.Font (italic)
 import CSS.Size (pct)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Bifunctor (lmap)
-import Data.Either (Either(..))
+import Data.Either (Either(..), either)
 import Effect.Aff (Aff)
 import Fourth.Data (User(..), Username)
 import Halogen as H
@@ -32,7 +32,7 @@ instance showErr :: Show Err where
 
 -- | Now our parent will provide us with a username
 -- | So we take this input when we start up
-type Input = Username
+type Input = Either Username User
 
 -- | The parent might want to know when we fetched someone
 data Message = Fetched (Either Err User)
@@ -47,7 +47,7 @@ data State = Retrieving Username
 component :: H.Component HH.HTML Query Input Message Aff
 component =
   H.component
-  { initialState : Retrieving
+  { initialState : either Retrieving (Finished <<< Right)
   , receiver : HE.input_ Fetch
   , render
   , eval
