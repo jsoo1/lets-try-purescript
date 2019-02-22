@@ -1,20 +1,23 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TypeInType #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE TupleSections         #-}
+{-# LANGUAGE TypeInType            #-}
 
-module DB (DB(..), all, delete, get, insert) where
+module DB (DB(..), KV, all, delete, get, insert) where
 
-import Prelude hiding (all)
-import Data (Dir, Message, Username(..), TimeCreated, User, by)
-import Data.Kind (Type)
-import Data.Aeson (FromJSONKey, FromJSON, ToJSON, ToJSONKey)
-import qualified Data.Aeson as AE
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
-import System.Directory (listDirectory)
+import           Data             (Dir, Message, TimeCreated, User,
+                                   Username (..), by)
+import           Data.Aeson       (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
+import qualified Data.Aeson       as AE
+import           Data.Kind        (Type)
+import           Data.Map.Strict  (Map)
+import qualified Data.Map.Strict  as Map
+import qualified Data.Text        as T
+import           Prelude          hiding (all)
+import           System.Directory (listDirectory)
 
 data DB :: Type -> Type -> Type where
   Users :: FilePath -> DB Username User
@@ -32,15 +35,15 @@ all db =
       messages <- sequence <$> (traverse (readMessagesFile dir . username') =<< listDirectory (show dir))
       pure $ fmap (\fs -> Map.fromList $ (\(t, m) -> ((by m, t), m)) <$> (Map.toList =<< fs)) messages
 
-get :: KV k v => DB k v -> k -> IO (Either String v)
+get :: KV k v => DB k v -> k -> IO (Either String (Maybe v))
 get db key =
   case db of
     Users file -> do
       users <- readUsersFile file
-      pure $ maybe (Left "not found") Right =<< Map.lookup key <$> users
+      pure $ Map.lookup key <$> users
     Messages dir -> do
       messages <- readMessagesFile dir (fst key)
-      pure $ maybe (Left "not found") Right =<< Map.lookup (snd key) <$> messages
+      pure $ Map.lookup (snd key) <$> messages
 
 insert :: KV k v => DB k v -> k -> v -> IO (Either String v)
 insert db key value =
@@ -78,10 +81,18 @@ writeUsersFile :: FilePath -> Map Username User -> IO ()
 writeUsersFile p = AE.encodeFile p
 
 readMessagesFile :: Dir -> Username -> IO (Either String (Map TimeCreated Message))
-readMessagesFile dir = AE.eitherDecodeFileStrict . messagesFile dir 
+readMessagesFile dir = AE.eitherDecodeFileStrict . messagesFile dir
 
 writeMessagesFile :: Dir -> Username -> Map TimeCreated Message -> IO ()
 writeMessagesFile dir username = AE.encodeFile $ messagesFile dir username
 
 username' :: String -> Username
 username' = Username . T.pack
+
+instance KV Username User where
+instance Key Username where
+instance Value User where
+
+instance KV (Username, TimeCreated) Message where
+instance Key (Username, TimeCreated) where
+instance Value Message where

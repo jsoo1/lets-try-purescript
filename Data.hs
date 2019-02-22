@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
 
-module Data (Dir, Message, TimeCreated, Username(..), User, by, username) where
+module Data (Dir(..), Message, TimeCreated(..), Username(..), User, by, username) where
 
 import           Data.Aeson            (FromJSON, FromJSONKey, ToJSON,
                                         ToJSONKey)

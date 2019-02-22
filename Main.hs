@@ -8,21 +8,25 @@
 module Main (main) where
 
 import           Control.Monad.IO.Class   (liftIO)
-import           Data                     (User, username, Username)
+import           Data                     (Dir (..), Message, TimeCreated(..), User,
+                                           Username, by, username)
 import qualified Data.Aeson               as AE
 import           Data.Map.Strict          (Map)
 import qualified Data.Map.Strict          as Map
 import           Data.Proxy               (Proxy (..))
-import           DB
+import           Data.Time.Clock.POSIX    (getPOSIXTime)
+import           DB                       (DB (..), KV)
+import qualified DB
 import           Network.Wai.Handler.Warp (run)
 import           Options.Generic          (Generic, ParseRecord, getRecord)
 import           Servant
 
 data Options =
   Options
-  { from  :: FilePath
-  , on    :: Int
-  , users :: FilePath
+  { from     :: FilePath
+  , on       :: Int
+  , users    :: FilePath
+  , messages :: FilePath
   }
   deriving (Generic, ParseRecord)
 
@@ -30,52 +34,55 @@ type LetsTryPureScript = "user" :> ReqBody '[JSON] Username :> Get '[JSON] (Mayb
   :<|> "user" :> ReqBody '[JSON] User :> Post '[JSON] User
   :<|> "user" :> ReqBody '[JSON] Username :> DeleteNoContent '[JSON] NoContent
   :<|> "user" :> "all" :> Get '[JSON] (Map Username User)
+  :<|> "message" :> ReqBody '[JSON] (Username, TimeCreated) :> Get '[JSON] (Maybe Message)
+  :<|> "message" :> ReqBody '[JSON] Message :> Post '[JSON] Message
+  :<|> "message" :> ReqBody '[JSON] (Username, TimeCreated) :> Get '[JSON] NoContent
+  :<|> "message" :> "all" :> Get '[JSON] (Map (Username, TimeCreated) Message)
   :<|> Raw
 
 main :: IO ()
 main = do
   Options {..} <- getRecord "serve a static directory and a users \"database\""
+  let userDB = Users users
+      messageDB = Messages $ Dir messages
+  run on $ serve letsTryPureScript $ server (Dir from) userDB messageDB
   putStrLn $ "running on " <> show on
-  run on $ serve letsTryPureScript $ server from users
 
   where
     letsTryPureScript :: Proxy LetsTryPureScript
     letsTryPureScript = Proxy
 
-server :: FilePath -> FilePath -> Server LetsTryPureScript
-server staticDir usersFile =
-  getUser usersFile
-  :<|> postUser usersFile
-  :<|> deleteUser usersFile
-  :<|> getUsersFile usersFile
+server :: Dir -> DB Username User -> DB (Username, TimeCreated) Message -> Server LetsTryPureScript
+server (Dir staticDir) users messages =
+  get users
+  :<|> (pure (post users) <*> username <*> id)
+  :<|> delete users
+  :<|> getAll users
+  :<|> get messages
+  :<|> (\msg -> do
+           now <- liftIO getPOSIXTime
+           post messages (by msg, TimeCreated now) msg)
+  :<|> delete messages
+  :<|> getAll messages
   :<|> serveDirectoryWebApp staticDir
 
   where
-    getUsersFile :: FilePath -> Handler (Map Username User)
-    getUsersFile p =
-      either (throwError . serverError) pure =<< liftIO (AE.eitherDecodeFileStrict p :: IO (Either String (Map Username User)))
+    getAll :: KV k v => DB k v -> Handler (Map k v)
+    getAll db = liftIO (DB.all db) >>= orErr
 
-    getUser :: FilePath -> Username -> Handler (Maybe User)
-    getUser p u =
-      Map.lookup u <$> getUsersFile p
+    get :: KV k v => DB k v -> k -> Handler (Maybe v)
+    get db k = liftIO (DB.get db k) >>= orErr
 
-    postUser :: FilePath -> User -> Handler User
-    postUser p user =
-      updateUser p user =<< getUsersFile p
-      where
-        updateUser :: FilePath -> User -> Map Username User -> Handler User
-        updateUser p' u us = do
-          liftIO $ AE.encodeFile p' $ Map.insert (username u) u us
-          pure u
+    post :: KV k v => DB k v -> k -> v -> Handler v
+    post db k v = liftIO (DB.insert db k v) >>= orErr
 
-    deleteUser :: FilePath -> Username -> Handler NoContent
-    deleteUser p username =
-      delete p username =<< getUsersFile p
-      where
-        delete :: FilePath -> Username -> Map Username User -> Handler NoContent
-        delete p' u us = do
-          liftIO $ AE.encodeFile p' $ Map.delete u us
-          pure NoContent
+    delete :: KV k v => DB k v -> k -> Handler NoContent
+    delete db k = do
+      liftIO (DB.delete db k) >>= orErr
+      pure NoContent
+
+    orErr :: Either String a -> Handler a
+    orErr = either (throwError . serverError) pure
 
     serverError :: String -> ServantErr
     serverError s =
@@ -85,4 +92,3 @@ server staticDir usersFile =
       , errBody = ""
       , errHeaders = []
       }
-
