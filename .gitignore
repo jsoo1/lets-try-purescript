@@ -13,3 +13,5 @@
 bin/
 share/
 dist/
+.ghc.*
+dist-newstyle/
