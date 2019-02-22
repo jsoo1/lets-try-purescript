@@ -8,13 +8,12 @@
 module Main (main) where
 
 import           Control.Monad.IO.Class   (liftIO)
-import           Data.Aeson               (FromJSON, FromJSONKey, ToJSON,
-                                           ToJSONKey)
+import           Data                     (User, username, Username)
 import qualified Data.Aeson               as AE
 import           Data.Map.Strict          (Map)
 import qualified Data.Map.Strict          as Map
 import           Data.Proxy               (Proxy (..))
-import           Data.Text
+import           DB
 import           Network.Wai.Handler.Warp (run)
 import           Options.Generic          (Generic, ParseRecord, getRecord)
 import           Servant
@@ -42,17 +41,6 @@ main = do
   where
     letsTryPureScript :: Proxy LetsTryPureScript
     letsTryPureScript = Proxy
-
-
-data User =
-  User
-  { username  :: Username
-  , name      :: Text
-  , avatarUrl :: Text
-  , url       :: Text
-  , bio       :: Text
-  }
-  deriving (Generic, FromJSON, ToJSON)
 
 server :: FilePath -> FilePath -> Server LetsTryPureScript
 server staticDir usersFile =
@@ -98,5 +86,3 @@ server staticDir usersFile =
       , errHeaders = []
       }
 
-newtype Username = Username Text
-  deriving (Eq, Ord, Generic, ToJSON, ToJSONKey, FromJSON, FromJSONKey)
