@@ -1,3 +1,13 @@
+.a {
+    color: black;
+    text-decoration: none;
+}
+
+.a:visited {
+    color: black;
+    text-decoration: none;
+}
+
 .btn {
     font-family: 'CMUSerifRoman';
     font-weight: normal;

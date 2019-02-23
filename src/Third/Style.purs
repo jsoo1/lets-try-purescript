@@ -1,7 +1,9 @@
-module Third.Style ( col, row, paragraph, caption, code, text, cmuSerif, fontSize) where
+module Third.Style ( col, row, paragraph, caption, anchor, code, text, outlined, cmuSerif, fontSize) where
 
 import Prelude
 import CSS ( StyleM
+           , border
+           , color
            , display
            , height
            , flex
@@ -9,6 +11,8 @@ import CSS ( StyleM
            , paddingBottom
            , paddingTop
            )
+import CSS.Border (solid, borderRadius)
+import CSS.Color (black)
 import CSS.Flexbox ( AlignItemsValue(..)
                    , alignItems
                    , column
@@ -22,6 +26,7 @@ import CSS.Font as Font
 import CSS.Geometry (lineHeight)
 import CSS.Property (value)
 import CSS.Size (Size, pct, px, rem)
+import CSS.Text (TextDecoration(..), textDecoration)
 import Data.NonEmpty as NonEmpty
 
 col :: StyleM Unit
@@ -49,6 +54,16 @@ caption = do
   text
   cmuSerif
   fontSize (px 18.0)
+
+anchor :: StyleM Unit
+anchor = do
+  textDecoration $ TextDecoration $ value "none"
+  color black
+
+outlined :: StyleM Unit
+outlined = do
+  border solid (px 1.0) black
+  borderRadius (px 4.0) (px 4.0) (px 4.0) (px 4.0)
 
 code :: StyleM Unit
 code = do

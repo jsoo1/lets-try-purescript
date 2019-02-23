@@ -43,10 +43,8 @@ type LetsTryPureScript = "user" :> ReqBody '[JSON] Username :> Get '[JSON] (Mayb
 main :: IO ()
 main = do
   Options {..} <- getRecord "serve a static directory and a users \"database\""
-  let userDB = Users users
-      messageDB = Messages $ Dir messages
-  run on $ serve letsTryPureScript $ server (Dir from) userDB messageDB
   putStrLn $ "running on " <> show on
+  run on $ serve letsTryPureScript $ server (Dir from) (Users users) (Messages (Dir messages))
 
   where
     letsTryPureScript :: Proxy LetsTryPureScript

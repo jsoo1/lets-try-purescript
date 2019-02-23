@@ -15,9 +15,9 @@ data User =
   User
   { username  :: Username
   , name      :: Text
-  , avatarUrl :: Text
+  , avatarUrl :: Maybe Text
   , url       :: Text
-  , bio       :: Text
+  , bio       :: Maybe Text
   }
   deriving (Generic, FromJSON, ToJSON)
 

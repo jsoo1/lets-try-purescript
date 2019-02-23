@@ -60,10 +60,9 @@ render { username, loading, response } =
     , HP.value username
     , HE.onValueInput $ HE.input SetUsername
     , HE.onKeyUp
-      $ (\k -> if Key.code k == "Enter"
-               then HE.input_ Fetch unit
-               else Nothing
-        )
+      (\k -> if Key.code k == "Enter"
+             then HE.input_ Fetch unit
+             else Nothing)
     ]
   , HTML.btn
     [ style do
