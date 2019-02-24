@@ -37,6 +37,7 @@ data Query a = Fetch a
 data State = Retrieving Retrieval
            | Finished (Either { username :: Username, err :: Err } User)
 
+-- | We could be getting from the backend or github
 type Retrieval =
   { username :: Username
   , url :: String
@@ -44,7 +45,8 @@ type Retrieval =
   }
 
 -- | We now have a nontrivial initial state
--- | `receiver` will be called when we start up
+-- | `initializer` will be called when we start up
+-- | `finalizer` would be called when we are destroyed
 component :: H.Component HH.HTML Query Input Message Aff
 component =
   H.lifecycleComponent

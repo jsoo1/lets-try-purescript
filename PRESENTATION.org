@@ -51,9 +51,33 @@
 ** Maintained and used by slamdata
 
 ** Comparing to elm: Casually speaking - Halogen uses Free where elm (and redux) use something like CoFree
-   
+
    You will notice they feel dual to each other as we go
 
-** Following is a demo that mostly covers the halogen tutorial
+** Following is a demo that mostly covers the halogen tutorial plus a little more
 
    https://github.com/slamdata/purescript-halogen/tree/v4.0.0/docs/
+
+* Addendum
+
+** FFI is great:
+
+   - Import values or types (values shown below)
+
+#+BEGIN_SRC purescript
+-- src/Math.purs
+module Math where
+foreign import pow :: Number -> Number -> Number
+#+END_SRC
+
+#+BEGIN_SRC js
+// src/Math.js
+"use strict";
+exports.pow = function(x) {
+  return function(y) {
+    return Math.pow(x,y);
+  };
+};
+#+END_SRC
+
+** Routing possible through ~receivers~ of components

@@ -42,14 +42,19 @@ type State = { users :: Maybe (Either Err (Map Username User))
              }
 
 type Input = Unit
-
 type Message = Void
 
+-- | We provide a Slot type for each kind of child component we have
+-- | There are other ways to do this, but i have chosen this for now
 data Slot = BackendUserSlot Username | GithubUserSlot String
 
+-- | Slot types must have instances for Eq and Ord
 derive instance eqSlot :: Eq Slot
 derive instance ordSlot :: Ord Slot
 
+
+-- | There are corresponding constructors for parent components
+-- | Note we are using the lifecycle to fetch our users, now
 component :: H.Component HH.HTML Query Input Message Aff
 component =
   H.lifecycleParentComponent
@@ -68,6 +73,8 @@ component =
       , fetching : Left Nothing
       }
 
+-- | Note the new type for HTML.
+-- | You must specify the slot and child query types
 render :: State -> H.ParentHTML Query User.Query Slot Aff
 render s =
   HH.section [ style Style.col ]
