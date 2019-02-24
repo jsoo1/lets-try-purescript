@@ -10,7 +10,7 @@ import CSS.Flexbox (AlignSelfValue(..))
 import CSS.Size (px, rem)
 import Data.Argonaut (Json)
 import Data.Array as Array
-import Data.Either (Either(..), either)
+import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
@@ -38,8 +38,18 @@ data Query a = GetAll a
 type State = { users :: Maybe (Either Err (Map Username User))
              , loading :: Boolean
              , username :: String
-             , fetching :: Either (Maybe String) (Either Err User)
+             , fetching :: GithubUser
              }
+
+data GithubUser = Fetching (Maybe String)
+                | Selecting (Either Err User)
+                | Finished Username
+
+isFetching :: GithubUser -> Boolean
+isFetching x =
+  case x of
+    Fetching y -> Maybe.isJust y
+    _ -> false
 
 type Input = Unit
 type Message = Void
@@ -70,7 +80,7 @@ component =
       { users : Nothing
       , loading : false
       , username : ""
-      , fetching : Left Nothing
+      , fetching : Fetching Nothing
       }
 
 -- | Note the new type for HTML.
@@ -95,7 +105,7 @@ render s =
         [ HH.text "please introduce yourself"
         ]
       , HTML.input "your github username"
-        [ HP.disabled $ either Maybe.isJust (const false) s.fetching
+        [ HP.disabled $ isFetching s.fetching
         , HP.value s.username
         , HE.onValueInput $ HE.input SetUsername
         , HE.onKeyUp
@@ -108,13 +118,13 @@ render s =
              marginTop (rem 1.0)
              marginBottom (rem 0.5)
              alignSelf $ AlignSelfValue $ value "center"
-        , HP.disabled $ either Maybe.isJust (const false) s.fetching
+        , HP.disabled $ isFetching s.fetching
         , HE.onClick $ HE.input_ FetchGithubUser
         ]
         [ HH.text "search"
         ]
       , case s.fetching of
-          Right (Right user) ->
+          Selecting (Right user) ->
             HH.div [ style Style.col ]
             [ HH.slot
               (GithubUserSlot $ show $ username user)
@@ -134,9 +144,8 @@ render s =
               [ HH.text "yes"
               ]
             ]
-          Right (Left e) ->
-            HH.div
-            [ style Style.paragraph ]
+          Selecting (Left e) ->
+            HH.div [ style Style.paragraph ]
             [ HH.div []
               [ HH.text "something went wrong:"
               ]
@@ -144,7 +153,7 @@ render s =
               [ HH.text $ show e
               ]
             ]
-          Left (Just username) ->
+          Fetching (Just username) ->
             HH.slot
             (GithubUserSlot $ show username)
             User.component
@@ -153,8 +162,11 @@ render s =
                     , content : Nothing
                     })
             (HE.input (HandleGithubUser $ Username s.username))
-          Left Nothing ->
-            HH.text ""
+          Fetching Nothing -> HH.text ""
+          Finished username ->
+            HH.div [ style Style.paragraph]
+            [ HH.text $ "ok " <> show username <> ", you've been added"
+            ]
       ]
     ]
   , HH.hr [ style $ color black]
@@ -206,10 +218,17 @@ eval q =
     SetUsername s next -> do
       H.modify_ (_ { username = s })
       pure next
+    FetchGithubUser next -> do
+      s <- H.get
+      H.modify_ (_ { fetching = Fetching $ Just s.username })
+      pure next
+    HandleGithubUser name (User.Fetched response) next -> do
+      H.modify_ (_ { fetching = Selecting $ response  })
+      pure next
     SelectGithubUser next -> do
       s <- H.get
       case s.fetching of
-        Right (Right user) -> do
+        Selecting (Right user) -> do
           H.modify_ (_ { loading = true })
           response <- H.liftAff $ post "http://localhost:8080/user" encodeUser user
           H.modify_ (_ { loading = false
@@ -218,15 +237,9 @@ eval q =
                          <*> decode response
                          <*> maybe (pure Map.empty) identity s.users
                        })
+          H.modify_ (_ { fetching = Finished $ username user })
           pure next
         _ -> pure next
-    FetchGithubUser next -> do
-      s <- H.get
-      H.modify_ (_ { fetching = Left $ Just s.username })
-      pure next
-    HandleGithubUser name (User.Fetched response) next -> do
-      H.modify_ (_ { fetching = Right $ response  })
-      pure next
     HandleBackendUser name (User.Fetched response) next -> do
       s <- H.get
       H.modify_ (_ { users = pure $
