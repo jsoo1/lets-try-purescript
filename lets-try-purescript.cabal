@@ -19,6 +19,7 @@ executable lets-try-purescript
                      , RecordWildCards
                      , TypeOperators
   build-depends: aeson >=1.4.2.0 && <5
+               , async >=2.2.1 && <2.3
                , base >=4.12 && <4.13
                , containers >=0.6 && <0.7
                , directory >=1.3.3.2 && <1.4

@@ -7,6 +7,9 @@
 
 module Main (main) where
 
+import Control.Concurrent.MVarLock (Lock, newLock)
+import Control.Concurrent.STM.TVar (TVar, newTVar)
+import Control.Concurrent.STM (atomically)
 import           Control.Monad.IO.Class   (liftIO)
 import           Data                     (Dir (..), Message, TimeCreated(..), User,
                                            Username, by, username)
@@ -20,6 +23,7 @@ import qualified DB
 import           Network.Wai.Handler.Warp (run)
 import           Options.Generic          (Generic, ParseRecord, getRecord)
 import           Servant
+import Servant.API.WebSocket
 
 data Options =
   Options
@@ -38,13 +42,18 @@ type LetsTryPureScript = "user" :> ReqBody '[JSON] Username :> Get '[JSON] (Mayb
   :<|> "message" :> ReqBody '[JSON] Message :> Post '[JSON] Message
   :<|> "message" :> ReqBody '[JSON] (Username, TimeCreated) :> Get '[JSON] NoContent
   :<|> "message" :> "all" :> Get '[JSON] (Map (Username, TimeCreated) Message)
+  -- :<|> "message" :> "subscribe" :> WebSocket
   :<|> Raw
 
 main :: IO ()
 main = do
   Options {..} <- getRecord "serve a static directory and a users \"database\""
   putStrLn $ "running on " <> show on
-  run on $ serve letsTryPureScript $ server (Dir from) (Users users) (Messages (Dir messages))
+  lockUsers <- newLock 
+  lockMessages <- atomically $ newTVar Map.empty
+  run on
+    $ serve letsTryPureScript
+    $ server (Dir from) (Users users lockUsers) (Messages (Dir messages) lockMessages)
 
   where
     letsTryPureScript :: Proxy LetsTryPureScript
@@ -62,6 +71,7 @@ server (Dir staticDir) users messages =
            post messages (by msg, TimeCreated now) msg)
   :<|> delete messages
   :<|> getAll messages
+  -- :<|> subscribe messages
   :<|> serveDirectoryWebApp staticDir
 
   where
