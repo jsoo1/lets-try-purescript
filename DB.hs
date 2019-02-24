@@ -3,7 +3,6 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeInType            #-}
 
 module DB (DB(..), KV, all, delete, get, insert) where
@@ -78,7 +77,7 @@ readUsersFile :: FilePath -> IO (Either String (Map Username User))
 readUsersFile = AE.eitherDecodeFileStrict
 
 writeUsersFile :: FilePath -> Map Username User -> IO ()
-writeUsersFile p = AE.encodeFile p
+writeUsersFile = AE.encodeFile
 
 readMessagesFile :: Dir -> Username -> IO (Either String (Map TimeCreated Message))
 readMessagesFile dir = AE.eitherDecodeFileStrict . messagesFile dir
