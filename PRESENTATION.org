@@ -34,6 +34,8 @@
 
 **** Nicer records
 
+**** Extensible Records
+
 ** An excellent playground for writing frontend architectures
 
   - Thermite - wrapper around react
