@@ -30,6 +30,7 @@ instance Show Username where
 data Message =
   Message
   { by      :: Username
+  , created :: TimeCreated
   , content :: Text
   }
   deriving (Generic, FromJSON, ToJSON)
