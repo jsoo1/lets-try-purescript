@@ -74,7 +74,7 @@ render s =
              HH.div []
              $ (pure (HH.slot' CP.cp1)
                 <*> username
-                <*> const User.component
+                <*> const User.small
                 <*> pure <<< identity
                 <*> HE.input <<< HandleUser <<< username)
              <$> Array.fromFoldable users
