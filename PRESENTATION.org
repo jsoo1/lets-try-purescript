@@ -54,7 +54,8 @@
 
 ** Comparing to elm: Casually speaking - Halogen uses Free where elm (and redux) use something like CoFree
 
-   You will notice they feel dual to each other as we go
+   You will notice they feel dual to each other as we go.
+   Halogen is muuuuch more concise
 
 ** Following is a demo that mostly covers the halogen tutorial plus a little more
 

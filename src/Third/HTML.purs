@@ -32,7 +32,7 @@ input label properties =
   HH.label []
     [ HH.div
       [ style do
-           S.paragraph
+           S.caption
            display flex
            flexDirection column
            alignItems $ AlignItemsValue $ value "center"
@@ -42,6 +42,7 @@ input label properties =
     , HH.input
       $ [ HP.type_ InputText
         , style S.paragraph
+        , class_ $ ClassName "fill-width"
         ]
       <> properties
     ]

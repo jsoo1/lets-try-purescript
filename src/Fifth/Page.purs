@@ -4,6 +4,7 @@ import CSS (color, display, flex)
 import CSS.Color (black, red)
 import CSS.Flexbox (flexDirection, row)
 import CSS.Font (fontSize)
+import CSS.Overflow (overflowY, scroll)
 import CSS.Size (px)
 import Data.Array as Array
 import Data.Const (Const)
@@ -91,7 +92,7 @@ render s =
           ]
         , case s.users of
              Just (Right users) ->
-               HH.div [] $
+               HH.div [ style $ overflowY scroll ] $
                (pure (HH.slot' CP.cp1)
                 <*> username
                 <*> const User.tiny
@@ -144,12 +145,11 @@ eval q =
         Right m -> void $ H.query' CP.cp4 unit $ H.action $ Messages.NewMessage m
       pure next
     NewUser message next -> do
-      H.modify_ (\s ->
-                  s { users =
-                      pure $ pure (pure Map.insert <*> username <*> identity)
-                      <*> message
-                      <*> maybe (pure Map.empty) identity s.users
-                    })
+      H.modify_ (\s -> s { users =
+                       pure $ pure (pure Map.insert <*> username <*> identity)
+                       <*> message
+                       <*> maybe (pure Map.empty) identity s.users
+                       })
       pure next
     HandleGithub (Github.Selected user) next -> do
       H.modify_ (_ { loadingUsers = true })

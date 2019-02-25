@@ -1,12 +1,12 @@
 module Fifth.Messages (Query(..), Message(..), component) where
 
-import CSS (height, value, width, backgroundColor, marginLeft, paddingLeft, paddingBottom)
+import CSS (display, flex, height, value, width, backgroundColor, marginLeft, marginRight, marginTop,  paddingLeft, paddingTop)
 import CSS.Border (borderRadius)
 import CSS.Color (grey)
-import CSS.Flexbox (AlignItemsValue(..), JustifyContentValue(..), alignItems, justifyContent)
+import CSS.Flexbox (AlignItemsValue(..), AlignSelfValue(..), JustifyContentValue(..), alignItems, alignSelf, justifyContent)
 import CSS.Font (fontStyle, italic)
 import CSS.Overflow (overflowY, scroll)
-import CSS.Size (rem, pct, vh)
+import CSS.Size (rem, pct, vh, px)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -16,6 +16,7 @@ import Data.List ((:), List(..))
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
+import Data.String.Common as String
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
 import Effect.Console as Console
@@ -79,7 +80,7 @@ render s =
          HH.div
          [ style do
               overflowY scroll
-              height (vh 75.0)
+              height (vh 82.0)
          ]
          $ (pure message <*> (\m -> Map.lookup (by m) s.users) <*> identity)
          <$> (Array.sortWith created $ Array.fromFoldable messages)
@@ -92,22 +93,27 @@ render s =
   , HH.div
     [ style do
          Style.row
+         display flex
          height (rem 2.5)
+         marginTop (rem 1.25)
          alignItems $ AlignItemsValue $ value "center"
     ]
-    [ HTML.input "your message"
-      [ HP.disabled $ s.sending
-      , HP.value s.message
-      , HE.onValueInput $ HE.input SetMessage
-      , HE.onKeyUp
-        (\k -> if Key.code k == "Enter"
-               then HE.input_ Send unit
-               else Nothing)
+    [ HH.div [ style Style.flexOne ]
+      [ HTML.input "your message"
+        [ HP.disabled s.sending
+        , HP.value s.message
+        , HE.onValueInput $ HE.input SetMessage
+        , HE.onKeyUp
+          (\k -> if Key.code k == "Enter"
+                 then HE.input_ Send unit
+                 else Nothing)
+        ]
       ]
     , HTML.btn
       [ style do
+           marginTop (rem 3.5)
            marginLeft (rem 1.0)
-      , HP.disabled $ s.sending
+      , HP.disabled s.sending
       , HE.onClick $ HE.input_ Send
       ]
       [ HH.text "send"
@@ -123,23 +129,33 @@ render s =
            alignItems $ AlignItemsValue $ value "center"
       ]
       [ HH.div [ style Style.col ]
-        [ HH.div
-          [ style do
-               fontStyle italic
-               paddingBottom (rem 0.5)
-          ]
-          [ HH.text $ maybe "no user" show $ pure <<< username =<< u
-          ]
-        , avatar $ (\(User x) -> x.avatarUrl) =<< u
+        [ avatar $ (\(User x) -> x.avatarUrl) =<< u
         ]
       , HH.div
         [ style do
              paddingLeft (rem 1.25)
              Style.col
+             alignItems $ AlignItemsValue $ value "left"
+             alignSelf $ AlignSelfValue $ value "flex-start"
         ]
-        [ HH.div [ style Style.caption ]
-          [ HH.text $ format formatter $ Instant.toDateTime $ unTimeCreated m.created
+        [ HH.div
+        [ style do
+             Style.caption
+             display flex
+             paddingTop (px 0.0)
+        ]
+        [ HH.div
+          [ style do
+               fontStyle italic
+               marginRight (rem 0.5)
           ]
+          [ HH.text $ maybe "no user" show $ pure <<< username =<< u
+          ]
+        , HH.div [ style $ marginRight (rem 0.5) ] [ HH.text "-" ]
+        , HH.div []
+          [ HH.text $ String.toLower $ format formatter $ Instant.toDateTime $ unTimeCreated m.created
+          ]
+        ]
         , HH.div [] [ HH.text m.content ]
         ]
       ]
@@ -148,7 +164,7 @@ render s =
       case url of
         Just u ->
           HH.img
-          [ HP.src $ u
+          [ HP.src u
           , style do
                height (rem 3.0)
                width (rem 3.0)
