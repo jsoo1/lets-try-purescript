@@ -7,25 +7,26 @@
 
 module DB (DB(..), KV, all, delete, get, insert) where
 
-import Control.Concurrent.Async (async, wait)
-import Control.Concurrent.MVarLock (Lock, withLock, newLock)
-import Control.Concurrent.STM.TVar (TVar, modifyTVar, readTVar)
-import Control.Monad.STM (atomically)
-import           Data             (Dir, Message, TimeCreated, User,
-                                   Username (..), by)
-import           Data.Aeson       (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
-import qualified Data.Aeson       as AE
-import           Data.Aeson.Text  (encodeToLazyText)
-import           Data.Kind        (Type)
-import           Data.Map.Strict  (Map)
-import qualified Data.Map.Strict  as Map
-import qualified Data.Text        as T
-import           Prelude          hiding (all)
-import           System.Directory (listDirectory)
+import           Control.Concurrent.Async    (async, wait)
+import           Control.Concurrent.MVarLock (Lock, newLock, withLock)
+import           Control.Concurrent.STM.TVar (TVar, modifyTVar, readTVar)
+import           Control.Monad.STM           (atomically)
+import           Data                        (Dir, Message, TimeCreated, User,
+                                              Username (..), by)
+import           Data.Aeson                  (FromJSON, FromJSONKey, ToJSON,
+                                              ToJSONKey)
+import qualified Data.Aeson                  as AE
+import           Data.Aeson.Text             (encodeToLazyText)
+import           Data.Kind                   (Type)
+import           Data.Map.Strict             (Map)
+import qualified Data.Map.Strict             as Map
+import qualified Data.Text                   as T
+import           Prelude                     hiding (all)
+import           System.Directory            (doesFileExist, listDirectory)
 
 data DB :: Type -> Type -> Type where
   Users :: FilePath -> Lock -> DB Username User
-  Messages :: Dir -> (TVar (Map Username Lock)) -> DB (Username, TimeCreated) Message 
+  Messages :: Dir -> (TVar (Map Username Lock)) -> DB (Username, TimeCreated) Message
 
 class (Ord k, FromJSONKey k, ToJSONKey k) => Key k where
 class (FromJSON v, ToJSON v) => Value v where
@@ -47,6 +48,7 @@ get db key =
       users <- readUsersFile file lock
       pure $ Map.lookup key <$> users
     Messages dir lock -> do
+
       messages <- readMessagesFile' dir lock (fst key)
       pure $ Map.lookup (snd key) <$> messages
 
@@ -106,7 +108,12 @@ messagesFile dir username = show dir <> "/" <> show username
 
 readMessagesFile :: Dir -> Username -> Lock -> IO (Either String (Map TimeCreated Message))
 readMessagesFile dir username lock =
-  wait =<< (async $ withLock lock (wait =<< async (readMessagesFile'' dir username)))
+  wait =<< (async $ withLock lock $ do
+               fileP <- doesFileExist $ messagesFile dir username
+               if fileP
+                 then pure ()
+                 else writeFile (messagesFile dir username) ""
+               wait =<< async (readMessagesFile'' dir username))
 
 readMessagesFile' :: Dir -> TVar (Map Username Lock) -> Username -> IO (Either String (Map TimeCreated Message))
 readMessagesFile' dir lock username = readMessagesFile dir username =<< lockUserMessages lock username

@@ -42,7 +42,7 @@ ensure-static:
 	mkdir -p $(SHARE)
 
 server: ensure-bin
-	ghc -Wno-missing-methods -hidir $(BUILD) -odir $(BUILD) -o $(BIN)/$(BINARY_NAME) Main.hs
+	ghc -Wno-duplicate-exports -Wno-missing-methods -hidir $(BUILD) -odir $(BUILD) -o $(BIN)/$(BINARY_NAME) Main.hs
 
 ensure-bin:
 	mkdir -p $(BIN)

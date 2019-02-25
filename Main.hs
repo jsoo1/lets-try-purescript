@@ -7,26 +7,29 @@
 
 module Main (main) where
 
-import Control.Concurrent.MVarLock (Lock, newLock)
-import Control.Concurrent.STM.TVar (TVar, newTVar, modifyTVar, readTVar)
-import Control.Concurrent.STM (atomically)
-import           Control.Monad.IO.Class   (liftIO)
-import           Data                     (Dir (..), Message, TimeCreated(..), User,
-                                           Username, by, username)
-import qualified Data.Aeson               as AE
-import qualified Data.Aeson.Text as AE
-import           Data.Map.Strict          (Map)
-import qualified Data.Map.Strict          as Map
-import           Data.Proxy               (Proxy (..))
-import           Data.Time.Clock.POSIX    (getPOSIXTime)
-import           DB                       (DB (..), KV)
+import           Control.Concurrent.MVarLock   (Lock, newLock)
+import           Control.Concurrent.STM        (atomically)
+import           Control.Concurrent.STM.TVar   (TVar, modifyTVar, newTVar,
+                                                readTVar)
+import           Control.Monad.IO.Class        (liftIO)
+import           Data                          (Dir (..), Message (..),
+                                                TimeCreated (..), User,
+                                                Username, by, username)
+import qualified Data.Aeson                    as AE
+import qualified Data.Aeson.Text               as AE
+import           Data.Map.Strict               (Map)
+import qualified Data.Map.Strict               as Map
+import           Data.Proxy                    (Proxy (..))
+import           Data.Time.Clock.POSIX         (getPOSIXTime)
+import           DB                            (DB (..), KV)
 import qualified DB
-import           Network.Wai.Handler.Warp (run)
-import Network.WebSockets.Connection (Connection, forkPingThread, sendTextData)
-import Network.WebSockets (WebSocketsData)
-import           Options.Generic          (Generic, ParseRecord, getRecord)
+import           Network.Wai.Handler.Warp      (run)
+import           Network.WebSockets            (WebSocketsData)
+import           Network.WebSockets.Connection (Connection, forkPingThread,
+                                                sendTextData)
+import           Options.Generic               (Generic, ParseRecord, getRecord)
 import           Servant
-import Servant.API.WebSocket
+import           Servant.API.WebSocket
 
 data Options =
   Options
@@ -51,7 +54,7 @@ type LetsTryPureScript = "user" :> ReqBody '[JSON] Username :> Get '[JSON] (Mayb
 
 data State =
   State
-  { userConnections :: TVar [Connection]
+  { userConnections    :: TVar [Connection]
   , messageConnections :: TVar [Connection]
   }
 
@@ -59,7 +62,7 @@ main :: IO ()
 main = do
   Options {..} <- getRecord "serve a static directory and a users \"database\""
   putStrLn $ "running on " <> show on
-  lockUsers <- newLock 
+  lockUsers <- newLock
   lockMessages <- atomically $ newTVar Map.empty
   userConnections <- atomically $ newTVar []
   messageConnections <- atomically $ newTVar []
@@ -87,8 +90,8 @@ server state (Dir staticDir) users messages =
   :<|> subscribe (userConnections state)
   :<|> get messages
   :<|> (\msg -> do
-           now <- liftIO getPOSIXTime
-           m <- post messages (by msg, TimeCreated now) msg
+           now <- TimeCreated <$> liftIO getPOSIXTime
+           m <- post messages (by msg, now) $ Message (by msg) now (content msg)
            broadcast (messageConnections state) (AE.encodeToLazyText m)
            pure m)
   :<|> delete messages

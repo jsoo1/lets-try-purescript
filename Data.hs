@@ -1,10 +1,13 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeInType #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
 
-module Data (Dir(..), Message, TimeCreated(..), Username(..), User, by, username) where
+module Data (Dir(..), Message(..), TimeCreated(..), Username(..), User, by, username) where
 
 import           Data.Aeson            (FromJSON, FromJSONKey, ToJSON,
                                         ToJSONKey)
+import Data.Kind (Type)
 import           Data.Monoid           (Monoid)
 import           Data.Semigroup        (Semigroup)
 import           Data.Text
@@ -27,12 +30,16 @@ newtype Username = Username Text
 instance Show Username where
   show (Username u) = unpack u
 
-data Message =
-  Message
-  { by      :: Username
-  , created :: TimeCreated
-  , content :: Text
-  }
+data Message :: Type where
+  Message ::
+    { by      :: Username
+    , created :: TimeCreated
+    , content :: Text
+    } -> Message
+  FEMessage ::
+    { by :: Username
+    , content :: Text
+    } -> Message
   deriving (Generic, FromJSON, ToJSON)
 
 newtype TimeCreated = TimeCreated POSIXTime
