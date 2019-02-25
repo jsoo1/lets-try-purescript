@@ -10,11 +10,15 @@ PORT ?= 8080
 all: clean-static static
 
 start: ensure-bin clean-bin server copy
+ifeq ($(shell uname),Darwin)
+	cabal new-run lets-try-purescript -- --on 8080 --from ./share --users ./share/users.json --messages ./share/messages
+else
 	$(BIN)/$(BINARY_NAME) \
 	--from $(SHARE) \
 	--on $(PORT) \
 	--users $(SHARE)/users.json \
 	--messages $(MESSAGES)
+endif
 
 static: bundle copy
 
@@ -42,7 +46,11 @@ ensure-static:
 	mkdir -p $(SHARE)
 
 server: ensure-bin
+ifeq ($(shell uname),Darwin)
+	cabal new-build
+else
 	ghc -Wno-duplicate-exports -Wno-missing-methods -hidir $(BUILD) -odir $(BUILD) -o $(BIN)/$(BINARY_NAME) Main.hs
+endif
 
 ensure-bin:
 	mkdir -p $(BIN)
