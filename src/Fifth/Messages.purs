@@ -11,6 +11,7 @@ import Data.Argonaut.Encode (encodeJson)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.DateTime.Instant as Instant
+import Data.Foldable (for_)
 import Data.Formatter.DateTime (format, FormatterCommand(..))
 import Data.List ((:), List(..))
 import Data.Map (Map)
@@ -18,6 +19,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
 import Data.String.Common as String
 import Data.Tuple (Tuple(..))
+import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Console as Console
 import Effect.Now (now)
@@ -31,6 +33,9 @@ import Halogen.HTML.Properties as HP
 import Prelude
 import Third.Style as Style
 import Third.HTML as HTML
+import Web.DOM.Element as EL
+import Web.HTML.HTMLElement as HEL
+import Web.HTML.HTMLElement (HTMLElement)
 import Web.UIEvent.KeyboardEvent as Key
 
 data Query a = GetAllMessages a
@@ -67,6 +72,10 @@ component =
   , finalizer : Nothing
   }
 
+-- | To access the dom, you label an element with a Ref which you can access in the DSL
+messagesRef ∷ H.RefLabel
+messagesRef = H.RefLabel "messages"
+
 render :: State -> H.ComponentHTML Query
 render s =
   HH.div
@@ -81,6 +90,7 @@ render s =
          [ style do
               overflowY scroll
               height (vh 82.0)
+         , HP.ref messagesRef
          ]
          $ (pure message <*> (\m -> Map.lookup (by m) s.users) <*> identity)
          <$> (Array.sortWith created $ Array.fromFoldable messages)
@@ -181,18 +191,23 @@ render s =
           [ HH.text ""
           ]
 
-
+-- | Note we are working with the DOM here
 eval :: Query ~> H.ComponentDSL State Query Message Aff
 eval q =
   case q of
     GetAllMessages next -> do
       response <- H.liftAff $ get "/message/all"
       case decode response of
-        Right msgs -> H.modify_ (_ { messages = pure msgs })
+        Right msgs -> do
+          H.modify_ (_ { messages = pure msgs })
+          messagesEl <- H.getHTMLElementRef messagesRef
+          for_ messagesEl (H.liftEffect <<< scrollToBottom)
         Left e -> H.liftEffect $ Console.log $ show e
       pure next
     NewMessage msg next -> do
       H.modify_ (\s -> s { messages = pure $ insert msg s.messages })
+      messagesEl <- H.getHTMLElementRef messagesRef
+      for_ messagesEl (H.liftEffect <<< scrollToBottom)
       pure next
     SetMessage s next -> do
       H.modify_ (_ { message = s })
@@ -215,9 +230,18 @@ eval q =
                              , messages = pure $ insert msg x.messages
                              , message = ""
                              })
+          messagesEl <- H.getHTMLElementRef messagesRef
+          for_ messagesEl (H.liftEffect <<< scrollToBottom) 
           H.raise $ Sent msg
       pure next
     where
       insert :: Msg -> Maybe (Map (Tuple Username TimeCreated) Msg) -> Map (Tuple Username TimeCreated) Msg
       insert msg msgs = Map.insert (Tuple (by msg) (created msg)) msg
                         $ maybe Map.empty identity msgs
+
+      scrollToBottom :: HTMLElement -> Effect Unit
+      scrollToBottom el = do
+        scrollHeight <- EL.scrollHeight $ HEL.toElement el
+        offsetHeight <- HEL.offsetHeight el
+        EL.setScrollTop (scrollHeight) $ HEL.toElement el
+      

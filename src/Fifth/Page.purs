@@ -129,6 +129,8 @@ render s =
     ]
   ]
 
+-- | We can request information from children using `H.request`
+-- | And tell them to do actions with `H.action`
 eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void Aff
 eval q =
   case q of
