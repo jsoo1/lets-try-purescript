@@ -1,4 +1,4 @@
-module Fourth.User (State, Query(..) , Message(..) , component, small) where
+module Fourth.User (State, Query(..) , Message(..) , component, small, tiny) where
 
 import Affjax as AX
 import Affjax.RequestBody as AXRequest
@@ -247,6 +247,99 @@ renderSmall s =
           ]
         , HH.div [ style Style.caption ]
           [ HH.text $ maybe "no name" identity user.name
+          ]
+        ]
+      ]
+    Finished (Left {username, err}) ->
+      HH.div [ style Style.row ]
+      [ HH.div
+        [ style do
+             borderRadius (pct 50.0) (pct 50.0) (pct 50.0) (pct 50.0)
+             backgroundColor grey
+        ]
+        []
+      , HH.div
+        [ style do
+             Style.col
+             Style.caption
+        ]
+        [ HH.div_ [ HH.text $ show username ]
+        , HH.div [ style $ color red ]
+          [ HH.text $ show err
+          ]
+        ]
+      ]
+
+tiny :: H.Component HH.HTML Query Input Message Aff
+tiny =
+  H.lifecycleComponent
+  { initialState : either Retrieving (Finished <<< Right)
+  , receiver : HE.input_ Fetch
+  , render : renderTiny
+  , eval
+  , initializer : Just $ H.action Fetch
+  , finalizer : Nothing
+  }
+
+renderTiny :: State -> H.ComponentHTML Query
+renderTiny s =
+  case s of
+    Retrieving retrieval ->
+      HH.div [ style Style.row ]
+      [ HH.div
+        [ style do
+             borderRadius (pct 50.0) (pct 50.0) (pct 50.0) (pct 50.0)
+             backgroundColor grey
+        ]
+        []
+      , HH.div [ style Style.paragraph ]
+        [ HH.text $ show retrieval.username
+        ]
+      ]
+    Finished (Right (User user)) ->
+      HTML.a
+      [ HP.href user.url
+      , style do
+           width (rem 10.0)
+           display flex
+           alignItems $ AlignItemsValue $ value "center"
+           width (rem 24.0)
+           margin (rem 0.5) (rem 0.5) (rem 0.5) (rem 0.5)
+      ]
+      [ case user.avatarUrl of
+           Just url ->
+             HH.img
+             [ HP.src $ url
+             , style do
+                  height (rem 3.0)
+                  width (rem 3.0)
+                  borderRadius (pct 50.0) (pct 50.0) (pct 50.0) (pct 50.0)
+             ]
+           Nothing ->
+             HH.div
+             [ style do
+                  backgroundColor grey
+                  height (rem 3.0)
+                  width (rem 3.0)
+                  borderRadius (pct 50.0) (pct 50.0) (pct 50.0) (pct 50.0)
+             ]
+             [ HH.text "" ]
+      , HH.div
+        [ HP.class_ $ ClassName "a"
+        , style do
+             flexBasis (pct 0.0)
+             flexGrow 1
+             flexShrink 1
+             Style.col
+             alignItems $ AlignItemsValue $ value "center"
+             paddingLeft (rem 1.0)
+        ]
+        [ HH.div
+          [ style do
+               Style.caption
+               fontStyle italic
+          ]
+          [ HH.text $ show user.username
           ]
         ]
       ]

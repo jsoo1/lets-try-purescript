@@ -48,7 +48,6 @@ get db key =
       users <- readUsersFile file lock
       pure $ Map.lookup key <$> users
     Messages dir lock -> do
-
       messages <- readMessagesFile' dir lock (fst key)
       pure $ Map.lookup (snd key) <$> messages
 
@@ -112,14 +111,19 @@ readMessagesFile dir username lock =
                fileP <- doesFileExist $ messagesFile dir username
                if fileP
                  then pure ()
-                 else writeFile (messagesFile dir username) ""
+                 else writeFile (messagesFile dir username) "[]"
                wait =<< async (readMessagesFile'' dir username))
 
 readMessagesFile' :: Dir -> TVar (Map Username Lock) -> Username -> IO (Either String (Map TimeCreated Message))
 readMessagesFile' dir lock username = readMessagesFile dir username =<< lockUserMessages lock username
 
 readMessagesFile'' :: Dir -> Username -> IO (Either String (Map TimeCreated Message))
-readMessagesFile'' dir = AE.eitherDecodeFileStrict . messagesFile dir
+readMessagesFile'' dir username = do
+  fileP <- doesFileExist $ messagesFile dir username
+  if fileP
+    then pure ()
+    else writeFile (messagesFile dir username) "[]"
+  AE.eitherDecodeFileStrict $ messagesFile dir username
 
 writeMessagesFile :: Dir -> Username -> Map TimeCreated Message -> IO ()
 writeMessagesFile dir username = AE.encodeFile $ messagesFile dir username

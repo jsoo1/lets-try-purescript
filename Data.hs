@@ -1,5 +1,3 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE TypeInType #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
 
@@ -30,16 +28,12 @@ newtype Username = Username Text
 instance Show Username where
   show (Username u) = unpack u
 
-data Message :: Type where
-  Message ::
-    { by      :: Username
-    , created :: TimeCreated
-    , content :: Text
-    } -> Message
-  FEMessage ::
-    { by :: Username
-    , content :: Text
-    } -> Message
+data Message =
+  Message
+  { by      :: Username
+  , created :: TimeCreated
+  , content :: Text
+  }
   deriving (Generic, FromJSON, ToJSON)
 
 newtype TimeCreated = TimeCreated POSIXTime

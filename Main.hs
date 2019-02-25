@@ -126,7 +126,9 @@ server state (Dir staticDir) users messages =
       uuid <- liftIO $ randomIO
       liftIO $ atomically $ modifyTVar cs (Map.insert uuid c)
       liftIO $ catch (void $ receiveDataMessage c) ((\case
-        ConnectionClosed -> sendClose c ("closing now" :: Text)
+        ConnectionClosed -> do
+          atomically $ modifyTVar cs (Map.delete uuid)
+          sendClose c ("closing now" :: Text)
         CloseRequest _ _ -> atomically $ modifyTVar cs (Map.delete uuid)
         e -> throw e) :: ConnectionException -> IO ())
 

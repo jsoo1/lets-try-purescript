@@ -13,6 +13,7 @@ import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (Aff)
+import Fifth.Data (Msg)
 import Fifth.Page as Page
 import Foreign (F, Foreign, unsafeToForeign, readString)
 import Fourth.Data (User, Err(..))
@@ -28,12 +29,14 @@ import Web.Socket.WebSocket as WS
 main :: Effect Unit
 main = do
   usersConnection <- WS.create "ws://localhost:8080/user/subscribe" []
+  messagesConnection <- WS.create "ws://localhost:8080/message/subscribe" []
   HA.runHalogenAff do
     body <- HA.awaitBody
     io <- Driver.runUI Page.component unit body
-    
+
     -- | Send messages into our app
-    CR.runProcess (wsProducer usersConnection $$ wsConsumer io.query)
+    CR.runProcess (wsProducer usersConnection $$ wsUser io.query)
+    CR.runProcess (wsProducer messagesConnection $$ wsMessage io.query)
 
     -- | We could send messages back, too:
     -- io.subscribe $ wsSender connection
@@ -59,12 +62,20 @@ wsProducer socket = CRA.produce \emitter -> do
 -- | A consumer coroutine that takes the `query` function from our component IO
 -- | record and sends `ReceiveMessage` queries in when it receives inputs from the
 -- | producer.
-wsConsumer :: (Page.Query ~> Aff) -> CR.Consumer String Aff Unit
-wsConsumer query = CR.consumer \msg -> do
+wsUser :: (Page.Query ~> Aff) -> CR.Consumer String Aff Unit
+wsUser query = CR.consumer \msg -> do
   void $ query $ H.action $ Page.NewUser $ decode msg
   pure Nothing
     where
       decode :: String -> Either Err User
+      decode s = lmap JSONErr <<< decodeJson =<< lmap JSONErr (jsonParser s)
+
+wsMessage :: (Page.Query ~> Aff) -> CR.Consumer String Aff Unit
+wsMessage query = CR.consumer \msg -> do
+  void $ query $ H.action $ Page.NewMessage $ decode msg
+  pure Nothing
+    where
+      decode :: String -> Either Err Msg
       decode s = lmap JSONErr <<< decodeJson =<< lmap JSONErr (jsonParser s)
 
 -- | Should sending a message be desired

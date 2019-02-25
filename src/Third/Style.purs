@@ -1,4 +1,4 @@
-module Third.Style ( col, row, paragraph, caption, anchor, code, text, outlined, cmuSerif, fontSize) where
+module Third.Style ( col, row, flexOne, paragraph, caption, anchor, code, text, outlined, cmuSerif, fontSize) where
 
 import Prelude
 import CSS ( StyleM
@@ -38,10 +38,14 @@ col = do
 
 row :: StyleM Unit
 row = do
+  flexOne
+  padding (rem 1.25) (rem 1.25) (rem 1.25) (rem 1.25)
+
+flexOne :: StyleM Unit
+flexOne = do
   flexBasis (pct 0.0)
   flexGrow 1
   flexShrink 1
-  padding (rem 1.25) (rem 1.25) (rem 1.25) (rem 1.25)
 
 paragraph :: StyleM Unit
 paragraph = do
