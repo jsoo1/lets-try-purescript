@@ -36,4 +36,4 @@ executable lets-try-purescript
                , websockets >=0.12.5.2 && <0.12.6
   hs-source-dirs:      .
   default-language:    Haskell2010
-  ghc-options:  -Wno-missing-methods -Wno-missing-home-modules -Wno-duplicate-exports
+  ghc-options:  -threaded -Wno-missing-methods -Wno-missing-home-modules -Wno-duplicate-exports

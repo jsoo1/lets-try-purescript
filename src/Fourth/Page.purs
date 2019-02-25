@@ -104,14 +104,14 @@ eval q =
   case q of
     GetAll next -> do
       H.modify_ (_ { loading = true })
-      response <- H.liftAff $ get "http://localhost:8080/user/all"
+      response <- H.liftAff $ get "/user/all"
       H.modify_ (_ { loading = false
                    , users = Just $ decode response
                    })
       pure next
     HandleGithub (Github.Selected user) next -> do
       H.modify_ (_ { loading = true })
-      response <- H.liftAff $ post "http://localhost:8080/user" encodeUser user
+      response <- H.liftAff $ post "/user" encodeUser user
       H.modify_ (\s ->
                   s { loading = false
                     , users =

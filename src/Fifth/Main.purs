@@ -1,7 +1,9 @@
 module Fifth.Main (main) where
 
-import Control.Coroutine as CR
+import Prelude
+
 import Control.Coroutine (($$), (/\))
+import Control.Coroutine as CR
 import Control.Coroutine.Aff (emit)
 import Control.Coroutine.Aff as CRA
 import Control.Monad.Except (runExcept)
@@ -21,16 +23,19 @@ import Fourth.Data (User, Err(..))
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver as Driver
-import Prelude
 import Web.Event.EventTarget as EET
+import Web.HTML (window)
+import Web.HTML.Location (host)
+import Web.HTML.Window (location)
 import Web.Socket.Event.EventTypes as WSET
 import Web.Socket.Event.MessageEvent as ME
 import Web.Socket.WebSocket as WS
 
 main :: Effect Unit
 main = do
-  usersConnection <- WS.create "ws://localhost:8080/user/subscribe" []
-  messagesConnection <- WS.create "ws://localhost:8080/message/subscribe" []
+  host' <- host =<< location =<< window
+  usersConnection <- WS.create ("ws://" <> host' <> "/user/subscribe" ) []
+  messagesConnection <- WS.create ("ws://" <> host' <> "/message/subscribe") []
   HA.runHalogenAff do
     body <- HA.awaitBody
     io <- Driver.runUI Page.component unit body

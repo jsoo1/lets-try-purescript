@@ -133,7 +133,7 @@ eval q =
   case q of
     GetAllUsers next -> do
       H.modify_ (_ { loadingUsers = true })
-      response <- H.liftAff $ get "http://localhost:8080/user/all"
+      response <- H.liftAff $ get "/user/all"
       H.modify_ (_ { loadingUsers = false
                    , users = Just $ decode response
                    })
@@ -153,7 +153,7 @@ eval q =
       pure next
     HandleGithub (Github.Selected user) next -> do
       H.modify_ (_ { loadingUsers = true })
-      response <- H.liftAff $ post "http://localhost:8080/user" encodeUser user
+      response <- H.liftAff $ post "/user" encodeUser user
       H.modify_ (\s ->
                   s { loadingUsers = false
                     , users =

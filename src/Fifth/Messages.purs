@@ -170,7 +170,7 @@ eval :: Query ~> H.ComponentDSL State Query Message Aff
 eval q =
   case q of
     GetAllMessages next -> do
-      response <- H.liftAff $ get "http://localhost:8080/message/all"
+      response <- H.liftAff $ get "/message/all"
       case decode response of
         Right msgs -> H.modify_ (_ { messages = pure msgs })
         Left e -> H.liftEffect $ Console.log $ show e
@@ -187,7 +187,7 @@ eval q =
       now' <- H.liftEffect now
       response <-
         H.liftAff
-        $ post "http://localhost:8080/message" encodeJson
+        $ post "/message" encodeJson
         $ Msg { created : TimeCreated now'
               , by : username s.session
               , content : s.message
