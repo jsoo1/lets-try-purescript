@@ -1,7 +1,7 @@
 module Fifth.Main (main) where
 
 import Control.Coroutine as CR
-import Control.Coroutine (($$))
+import Control.Coroutine (($$), (/\))
 import Control.Coroutine.Aff (emit)
 import Control.Coroutine.Aff as CRA
 import Control.Monad.Except (runExcept)
@@ -35,8 +35,7 @@ main = do
     io <- Driver.runUI Page.component unit body
 
     -- | Send messages into our app
-    CR.runProcess (wsProducer usersConnection $$ wsUser io.query)
-    CR.runProcess (wsProducer messagesConnection $$ wsMessage io.query)
+    CR.runProcess (wsProducer usersConnection /\ wsProducer messagesConnection $$ wsConsumer io.query)
 
     -- | We could send messages back, too:
     -- io.subscribe $ wsSender connection
@@ -62,8 +61,8 @@ wsProducer socket = CRA.produce \emitter -> do
 -- | A consumer coroutine that takes the `query` function from our component IO
 -- | record and sends `ReceiveMessage` queries in when it receives inputs from the
 -- | producer.
-wsUser :: (Page.Query ~> Aff) -> CR.Consumer String Aff Unit
-wsUser query = CR.consumer \msg -> do
+wsConsumer :: (Page.Query ~> Aff) -> CR.Consumer (Tuple String String) Aff Unit
+wsConsumer query = CR.consumer \msg -> do
   void $ query $ H.action $ Page.NewUser $ decode msg
   pure Nothing
     where

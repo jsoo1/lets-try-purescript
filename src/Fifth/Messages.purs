@@ -1,6 +1,6 @@
 module Fifth.Messages (Query(..), Message(..), component) where
 
-import CSS (height, value, width, backgroundColor, marginLeft, height, paddingLeft, paddingBottom, paddingTop, width)
+import CSS (height, value, width, backgroundColor, marginLeft, paddingLeft, paddingBottom)
 import CSS.Border (borderRadius)
 import CSS.Color (grey)
 import CSS.Flexbox (AlignItemsValue(..), JustifyContentValue(..), alignItems, justifyContent)
@@ -197,6 +197,7 @@ eval q =
         Right msg -> do
           H.modify_ (\x -> x { sending = false
                              , messages = pure $ insert msg x.messages
+                             , message = ""
                              })
           H.raise $ Sent msg
       pure next

@@ -29,8 +29,7 @@ import Prelude
 import Third.Style as Style
 
 data Query a = GetAllUsers a
-             | NewUser (Either Err User) a
-             | NewMessage (Either Err Msg) a
+             | WebSocketMsg (Either Err Msg) a
              | HandleUser Username User.Message a
              | HandleGithub Github.Message a
              | HandleCurrentUser User.Message a
@@ -140,12 +139,9 @@ eval q =
       pure next
     NewMessage msg next -> do
       case msg of
-        Left e -> do
-          H.liftEffect $ Console.log $ show e
-          pure next
-        Right m -> do
-          -- x <- H.query' CP.cp4 unit (H.request $ Messages.NewMessage m)
-          pure next
+        Left e -> H.liftEffect $ Console.log $ show e
+        Right m -> void $ H.query' CP.cp4 unit $ H.action $ Messages.NewMessage m
+      pure next
     NewUser message next -> do
       H.modify_ (\s ->
                   s { users =

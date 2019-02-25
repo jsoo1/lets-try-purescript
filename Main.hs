@@ -96,8 +96,7 @@ server state (Dir staticDir) users messages =
   :<|> subscribe (userConnections state)
   :<|> get messages
   :<|> (\msg -> do
-           now <- TimeCreated <$> liftIO getPOSIXTime
-           m <- post messages (by msg, now) $ Message (by msg) now (content msg)
+           m <- post messages (by msg, created msg) msg
            broadcast (messageConnections state) (AE.encodeToLazyText m)
            pure m)
   :<|> delete messages
