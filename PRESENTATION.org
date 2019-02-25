@@ -88,6 +88,6 @@ exports.pow = function(x) {
 
 ** Other great libraries
 
-*** Formless
+*** Formless - don't manage state or render your own forms anymore
 
 *** Remote Data ported from elm

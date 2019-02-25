@@ -1,6 +1,7 @@
-module Fourth.Data (Err(..), User(..), Username(..), username, decode, encodeUsername, encodeUser) where
+module Fourth.Data (Err(..), User(..), Username(..), username, decode, encodeUsername, encodeUser, get, post) where
 
 import Affjax as AX
+import Affjax.RequestBody as AXBody
 import Affjax.ResponseFormat (ResponseFormatError)
 import Affjax.ResponseFormat as AXResponse
 import Control.Alt ((<|>))
@@ -13,6 +14,7 @@ import Data.Either (Either(..), note)
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
+import Effect.Aff (Aff)
 import Prelude
 
 -- | We can fail in two different ways
@@ -105,3 +107,9 @@ encodeUser (User u) =
   ~> "url" := u.url
   ~> "bio" := u.bio
   ~> jsonEmptyObject
+
+get :: String -> Aff (AX.Response (Either ResponseFormatError Json))
+get = AX.get AXResponse.json
+
+post :: forall a. String -> (a -> Json) -> a -> Aff (AX.Response (Either ResponseFormatError Json))
+post url encodeJson = AX.post AXResponse.json url <<< AXBody.json <<< encodeJson

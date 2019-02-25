@@ -1,91 +1,56 @@
-module Fourth.Page (Query(..), Message, component) where
+module Fourth.Page (Query(..), component) where
 
-import Affjax as AX
-import Affjax.RequestBody as AXBody
-import Affjax.ResponseFormat (ResponseFormatError)
-import Affjax.ResponseFormat as AXResponse
-import CSS (alignSelf, color, fontSize, marginBottom, marginTop, paddingBottom, value)
+import CSS (color, fontSize)
 import CSS.Color (black, red)
-import CSS.Flexbox (AlignSelfValue(..))
-import CSS.Size (px, rem)
-import Data.Argonaut (Json)
+import CSS.Size (px)
 import Data.Array as Array
+import Data.Const (Const)
 import Data.Either (Either(..))
+import Data.Functor.Coproduct.Nested (type (<\/>))
+import Data.Either.Nested (type (\/))
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
-import Data.Maybe as Maybe
 import Effect.Aff (Aff)
-import Fourth.Data (Err, User, Username(..), username, decode, encodeUser)
+import Fourth.Data (Err, User, Username, username, decode, encodeUser, get, post)
+import Fourth.Github as Github
 import Fourth.User as User
 import Halogen as H
+import Halogen.Component.ChildPath as CP
 import Halogen.HTML as HH
 import Halogen.HTML.CSS (style)
 import Halogen.HTML.Events as HE
-import Halogen.HTML.Properties as HP
 import Prelude
 import Third.Style as Style
-import Third.HTML as HTML
-import Web.UIEvent.KeyboardEvent as Key
 
 data Query a = GetAll a
-             | SetUsername String a
-             | FetchGithubUser a
-             | SelectGithubUser a
-             | HandleBackendUser Username User.Message a
-             | HandleGithubUser Username User.Message a
+             | HandleUser Username User.Message a
+             | HandleGithub Github.Message a
 
 type State = { users :: Maybe (Either Err (Map Username User))
              , loading :: Boolean
-             , username :: String
-             , fetching :: GithubUser
              }
 
-data GithubUser = Fetching (Maybe String)
-                | Selecting (Either Err User)
-                | Finished Username
-
-isFetching :: GithubUser -> Boolean
-isFetching x =
-  case x of
-    Fetching y -> Maybe.isJust y
-    _ -> false
-
-type Input = Unit
-type Message = Void
-
--- | We provide a Slot type for each kind of child component we have
--- | There are other ways to do this, but i have chosen this for now
-data Slot = BackendUserSlot Username | GithubUserSlot String
-
--- | Slot types must have instances for Eq and Ord
-derive instance eqSlot :: Eq Slot
-derive instance ordSlot :: Ord Slot
-
+-- | If there are multiple children query types, you must say so
+type ChildQuery = User.Query <\/> Github.Query <\/> (Const Void)
+type ChildSlot = Username \/ Unit \/ Void
 
 -- | There are corresponding constructors for parent components
--- | Note we are using the lifecycle to fetch our users, now
-component :: H.Component HH.HTML Query Input Message Aff
+-- | Note we are using the lifecycle to fetch our users
+component :: H.Component HH.HTML Query Unit Void Aff
 component =
   H.lifecycleParentComponent
-  { initialState : const initialState
+  { initialState : const { users : Nothing, loading : false }
   , render
   , eval
   , receiver : const Nothing
   , initializer : Just $ H.action GetAll
   , finalizer : Nothing
   }
-  where
-    initialState =
-      { users : Nothing
-      , loading : false
-      , username : ""
-      , fetching : Fetching Nothing
-      }
 
--- | Note the new type for HTML.
--- | You must specify the slot and child query types
-render :: State -> H.ParentHTML Query User.Query Slot Aff
+-- | When rendering with multiple child types, you have to route them via `ChildPath`
+-- | That is the CP.cpN functions below (up to 10 are defined, but you can make more)
+render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
 render s =
   HH.section [ style Style.col ]
   [ HH.h1
@@ -96,78 +61,7 @@ render s =
     [ HH.text "let's try purescript!"
     ]
   , HH.div [ style Style.row ]
-    [ HH.section
-      [ style do
-           Style.col
-           paddingBottom (rem 1.25)
-      ]
-      [ HH.h2 [ style Style.paragraph ]
-        [ HH.text "please introduce yourself"
-        ]
-      , HTML.input "your github username"
-        [ HP.disabled $ isFetching s.fetching
-        , HP.value s.username
-        , HE.onValueInput $ HE.input SetUsername
-        , HE.onKeyUp
-          (\k -> if Key.code k == "Enter"
-                 then HE.input_ FetchGithubUser unit
-                 else Nothing)
-        ]
-      , HTML.btn
-        [ style do
-             marginTop (rem 1.0)
-             marginBottom (rem 0.5)
-             alignSelf $ AlignSelfValue $ value "center"
-        , HP.disabled $ isFetching s.fetching
-        , HE.onClick $ HE.input_ FetchGithubUser
-        ]
-        [ HH.text "search"
-        ]
-      , case s.fetching of
-          Selecting (Right user) ->
-            HH.div [ style Style.col ]
-            [ HH.slot
-              (GithubUserSlot $ show $ username user)
-              User.component
-              (Right user)
-              (HE.input (HandleGithubUser $ username user))
-            , HH.h3 [ style Style.paragraph ]
-              [ HH.text "if this is you, select yes to add yourself"
-              ]
-            , HTML.btn
-              [ HE.onClick $ HE.input_ SelectGithubUser
-              , style do
-                   marginTop (rem 1.0)
-                   marginBottom (rem 1.0)
-                   alignSelf $ AlignSelfValue $ value "center"
-              ]
-              [ HH.text "yes"
-              ]
-            ]
-          Selecting (Left e) ->
-            HH.div [ style Style.paragraph ]
-            [ HH.div []
-              [ HH.text "something went wrong:"
-              ]
-            , HH.div [ style $ color red ]
-              [ HH.text $ show e
-              ]
-            ]
-          Fetching (Just username) ->
-            HH.slot
-            (GithubUserSlot $ show username)
-            User.component
-            (Left $ { username : Username username
-                    , url : "https://api.github.com/users/" <> username
-                    , content : Nothing
-                    })
-            (HE.input (HandleGithubUser $ Username s.username))
-          Fetching Nothing -> HH.text ""
-          Finished username ->
-            HH.div [ style Style.paragraph]
-            [ HH.text $ "ok " <> show username <> ", you've been added"
-            ]
-      ]
+    [ HH.slot' CP.cp2 unit Github.component unit $ HE.input HandleGithub
     ]
   , HH.hr [ style $ color black]
   , HH.div [ style Style.row ]
@@ -178,11 +72,11 @@ render s =
       , case s.users of
            Just (Right users) ->
              HH.div []
-             $ (pure HH.slot
-                  <*> BackendUserSlot <<< username
-                  <*> const User.component
-                  <*> pure <<< identity
-                  <*> HE.input <<< HandleBackendUser <<< username)
+             $ (pure (HH.slot' CP.cp1)
+                <*> username
+                <*> const User.component
+                <*> pure <<< identity
+                <*> HE.input <<< HandleUser <<< username)
              <$> Array.fromFoldable users
            Just (Left e) ->
              HH.div
@@ -205,7 +99,7 @@ render s =
     ]
   ]
 
-eval :: Query ~> H.ParentDSL State Query User.Query Slot Message Aff
+eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void Aff
 eval q =
   case q of
     GetAll next -> do
@@ -215,32 +109,18 @@ eval q =
                    , users = Just $ decode response
                    })
       pure next
-    SetUsername s next -> do
-      H.modify_ (_ { username = s })
+    HandleGithub (Github.Selected user) next -> do
+      H.modify_ (_ { loading = true })
+      response <- H.liftAff $ post "http://localhost:8080/user" encodeUser user
+      H.modify_ (\s ->
+                  s { loading = false
+                    , users =
+                      pure $ pure (pure Map.insert <*> username <*> identity)
+                      <*> decode response
+                      <*> maybe (pure Map.empty) identity s.users
+                    })
       pure next
-    FetchGithubUser next -> do
-      s <- H.get
-      H.modify_ (_ { fetching = Fetching $ Just s.username })
-      pure next
-    HandleGithubUser name (User.Fetched response) next -> do
-      H.modify_ (_ { fetching = Selecting $ response  })
-      pure next
-    SelectGithubUser next -> do
-      s <- H.get
-      case s.fetching of
-        Selecting (Right user) -> do
-          H.modify_ (_ { loading = true })
-          response <- H.liftAff $ post "http://localhost:8080/user" encodeUser user
-          H.modify_ (_ { loading = false
-                       , users = 
-                         pure $ pure (pure Map.insert <*> username <*> identity)
-                         <*> decode response
-                         <*> maybe (pure Map.empty) identity s.users
-                       })
-          H.modify_ (_ { fetching = Finished $ username user })
-          pure next
-        _ -> pure next
-    HandleBackendUser name (User.Fetched response) next -> do
+    HandleUser name (User.Fetched response) next -> do
       s <- H.get
       H.modify_ (_ { users = pure $
                         case s.users of
@@ -250,10 +130,4 @@ eval q =
                             pure (Map.insert name) <*> response <*> users
                    })
       pure next
-
-get :: String -> Aff (AX.Response (Either ResponseFormatError Json))
-get = AX.get AXResponse.json
-
-post :: forall a. String -> (a -> Json) -> a -> Aff (AX.Response (Either ResponseFormatError Json))
-post url encodeJson = AX.post AXResponse.json url <<< AXBody.json <<< encodeJson
 
