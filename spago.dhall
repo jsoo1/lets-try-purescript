@@ -5,7 +5,8 @@ You can edit this file as you like.
 { name =
     "try-purescript"
 , dependencies =
-    [ "affjax"
+    [ "aff-coroutines"
+    , "affjax"
     , "argonaut"
     , "argonaut-generic"
     , "effect"
@@ -14,6 +15,7 @@ You can edit this file as you like.
     , "halogen-css"
     , "halogen-vdom"
     , "psci-support"
+    , "web-socket"
     ]
 , packages =
     ./packages.dhall

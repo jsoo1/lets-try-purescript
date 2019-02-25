@@ -17,7 +17,7 @@ import           Options.Generic       (Generic)
 data User =
   User
   { username  :: Username
-  , name      :: Text
+  , name      :: Maybe Text
   , avatarUrl :: Maybe Text
   , url       :: Text
   , bio       :: Maybe Text

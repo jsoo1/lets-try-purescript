@@ -18,6 +18,7 @@
   ghc-optparse-generic
   ghc-servant-server
   ghc-servant-websockets
+  ghc-uuid
   ghc-wai
   ghc-websockets
   purescript

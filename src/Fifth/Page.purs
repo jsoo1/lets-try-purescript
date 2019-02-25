@@ -1,4 +1,4 @@
-module Fourth.Page (Query(..), component) where
+module Fifth.Page (Query(..), component) where
 
 import CSS (color, fontSize)
 import CSS.Color (black, red)
@@ -12,9 +12,9 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
 import Effect.Aff (Aff)
-import Fourth.Data (Err, User, Username, username, decode, encodeUser, get, post)
-import Fourth.Github as Github
+import Fourth.Data (Err, User, Username, decode, encodeUser, get, post, username)
 import Fourth.User as User
+import Fourth.Github as Github
 import Halogen as H
 import Halogen.Component.ChildPath as CP
 import Halogen.HTML as HH
@@ -23,33 +23,30 @@ import Halogen.HTML.Events as HE
 import Prelude
 import Third.Style as Style
 
-data Query a = GetAll a
+data Query a = GetAllUsers a
+             | NewUser (Either Err User) a
              | HandleUser Username User.Message a
              | HandleGithub Github.Message a
 
-type State = { users :: Maybe (Either Err (Map Username User))
-             , loading :: Boolean
-             }
+type State =
+  { users :: Maybe (Either Err (Map Username User))
+  , loadingUsers :: Boolean
+  }
 
--- | If there are multiple children query types, you must say so
 type ChildQuery = User.Query <\/> Github.Query <\/> Const Void
 type ChildSlot = Username \/ Unit \/ Void
 
--- | There are corresponding constructors for parent components
--- | Note we are using the lifecycle to fetch our users
 component :: H.Component HH.HTML Query Unit Void Aff
 component =
   H.lifecycleParentComponent
-  { initialState : const { users : Nothing, loading : false }
+  { initialState : const { users : Nothing, loadingUsers : false }
   , render
   , eval
   , receiver : const Nothing
-  , initializer : Just $ H.action GetAll
+  , initializer : Just $ H.action $ GetAllUsers
   , finalizer : Nothing
   }
 
--- | When rendering with multiple child types, you have to route them via `ChildPath`
--- | That is the CP.cpN functions below (up to 10 are defined, but you can make more)
 render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
 render s =
   HH.section [ style Style.col ]
@@ -102,18 +99,26 @@ render s =
 eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void Aff
 eval q =
   case q of
-    GetAll next -> do
-      H.modify_ (_ { loading = true })
+    GetAllUsers next -> do
+      H.modify_ (_ { loadingUsers = true })
       response <- H.liftAff $ get "http://localhost:8080/user/all"
-      H.modify_ (_ { loading = false
+      H.modify_ (_ { loadingUsers = false
                    , users = Just $ decode response
                    })
       pure next
+    NewUser message next -> do
+      H.modify_ (\s ->
+                  s { users =
+                      pure $ pure (pure Map.insert <*> username <*> identity)
+                      <*> message
+                      <*> maybe (pure Map.empty) identity s.users
+                    })
+      pure next
     HandleGithub (Github.Selected user) next -> do
-      H.modify_ (_ { loading = true })
+      H.modify_ (_ { loadingUsers = true })
       response <- H.liftAff $ post "http://localhost:8080/user" encodeUser user
       H.modify_ (\s ->
-                  s { loading = false
+                  s { loadingUsers = false
                     , users =
                       pure $ pure (pure Map.insert <*> username <*> identity)
                       <*> decode response
@@ -130,4 +135,3 @@ eval q =
                             pure (Map.insert name) <*> response <*> users
                    })
       pure next
-

@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TypeOperators     #-}
@@ -11,25 +12,30 @@ import           Control.Concurrent.MVarLock   (Lock, newLock)
 import           Control.Concurrent.STM        (atomically)
 import           Control.Concurrent.STM.TVar   (TVar, modifyTVar, newTVar,
                                                 readTVar)
+import Control.Exception (catch, throw)
 import           Control.Monad.IO.Class        (liftIO)
 import           Data                          (Dir (..), Message (..),
                                                 TimeCreated (..), User,
                                                 Username, by, username)
 import qualified Data.Aeson                    as AE
 import qualified Data.Aeson.Text               as AE
+import Data.Functor (void)
 import           Data.Map.Strict               (Map)
 import qualified Data.Map.Strict               as Map
 import           Data.Proxy                    (Proxy (..))
+import Data.Text (Text)
 import           Data.Time.Clock.POSIX         (getPOSIXTime)
+import Data.UUID (UUID)
 import           DB                            (DB (..), KV)
 import qualified DB
 import           Network.Wai.Handler.Warp      (run)
-import           Network.WebSockets            (WebSocketsData)
+import           Network.WebSockets            (WebSocketsData, DataMessage, ConnectionException(..))
 import           Network.WebSockets.Connection (Connection, forkPingThread,
-                                                sendTextData)
+                                                receiveDataMessage, sendClose, sendTextData)
 import           Options.Generic               (Generic, ParseRecord, getRecord)
 import           Servant
 import           Servant.API.WebSocket
+import System.Random (randomIO)
 
 data Options =
   Options
@@ -54,8 +60,8 @@ type LetsTryPureScript = "user" :> ReqBody '[JSON] Username :> Get '[JSON] (Mayb
 
 data State =
   State
-  { userConnections    :: TVar [Connection]
-  , messageConnections :: TVar [Connection]
+  { userConnections    :: TVar (Map UUID Connection)
+  , messageConnections :: TVar (Map UUID Connection)
   }
 
 main :: IO ()
@@ -64,8 +70,8 @@ main = do
   putStrLn $ "running on " <> show on
   lockUsers <- newLock
   lockMessages <- atomically $ newTVar Map.empty
-  userConnections <- atomically $ newTVar []
-  messageConnections <- atomically $ newTVar []
+  userConnections <- atomically $ newTVar Map.empty
+  messageConnections <- atomically $ newTVar Map.empty
   run on
     $ serve letsTryPureScript
     $ server
@@ -114,12 +120,17 @@ server state (Dir staticDir) users messages =
       liftIO (DB.delete db k) >>= orErr
       pure NoContent
 
-    subscribe :: TVar [Connection] -> Connection -> Handler ()
+    subscribe :: TVar (Map UUID Connection) -> Connection -> Handler ()
     subscribe cs c = do
       liftIO $ forkPingThread c 30
-      liftIO $ atomically $ modifyTVar cs (c :)
+      uuid <- liftIO $ randomIO
+      liftIO $ atomically $ modifyTVar cs (Map.insert uuid c)
+      liftIO $ catch (void $ receiveDataMessage c) ((\case
+        ConnectionClosed -> sendClose c ("closing now" :: Text)
+        CloseRequest _ _ -> atomically $ modifyTVar cs (Map.delete uuid)
+        e -> throw e) :: ConnectionException -> IO ())
 
-    broadcast :: WebSocketsData a => TVar [Connection] -> a -> Handler ()
+    broadcast :: WebSocketsData a => TVar (Map UUID Connection) -> a -> Handler ()
     broadcast cs x = do
       conns <- liftIO $ atomically $ readTVar cs
       liftIO $ flip sendTextData x `traverse` conns
