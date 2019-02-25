@@ -83,3 +83,11 @@ exports.pow = function(x) {
 #+END_SRC
 
 ** Routing possible through ~receivers~ of components
+
+** Excellent lens implementation (profunctors)
+
+** Other great libraries
+
+*** Formless
+
+*** Remote Data ported from elm
