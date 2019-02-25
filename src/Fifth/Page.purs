@@ -29,7 +29,8 @@ import Prelude
 import Third.Style as Style
 
 data Query a = GetAllUsers a
-             | WebSocketMsg (Either Err Msg) a
+             | NewUser (Either Err User) a
+             | NewMessage (Either Err Msg) a
              | HandleUser Username User.Message a
              | HandleGithub Github.Message a
              | HandleCurrentUser User.Message a

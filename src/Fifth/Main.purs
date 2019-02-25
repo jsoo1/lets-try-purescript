@@ -11,6 +11,7 @@ import Data.Bifunctor (lmap)
 import Data.Either (Either, either)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
+import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Fifth.Data (Msg)
@@ -62,12 +63,16 @@ wsProducer socket = CRA.produce \emitter -> do
 -- | record and sends `ReceiveMessage` queries in when it receives inputs from the
 -- | producer.
 wsConsumer :: (Page.Query ~> Aff) -> CR.Consumer (Tuple String String) Aff Unit
-wsConsumer query = CR.consumer \msg -> do
-  void $ query $ H.action $ Page.NewUser $ decode msg
+wsConsumer query = CR.consumer \(Tuple user msg) -> do
+  void $ query $ H.action $ Page.NewUser $ decodeUser user 
+  void $ query $ H.action $ Page.NewMessage $ decodeMessage msg
   pure Nothing
     where
-      decode :: String -> Either Err User
-      decode s = lmap JSONErr <<< decodeJson =<< lmap JSONErr (jsonParser s)
+      decodeUser :: String -> Either Err User
+      decodeUser s = lmap JSONErr <<< decodeJson =<< lmap JSONErr (jsonParser s)
+
+      decodeMessage :: String -> Either Err Msg
+      decodeMessage s = lmap JSONErr <<< decodeJson =<< lmap JSONErr (jsonParser s)
 
 wsMessage :: (Page.Query ~> Aff) -> CR.Consumer String Aff Unit
 wsMessage query = CR.consumer \msg -> do
