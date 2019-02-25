@@ -20,10 +20,12 @@ executable lets-try-purescript
                      , TypeOperators
   build-depends: aeson >=1.4.2.0 && <5
                , async >=2.2.1 && <2.3
-               , base >=4.12 && <4.13
+               , base >=4.11 && <4.12
                , containers >=0.6 && <0.7
                , directory >=1.3.3.2 && <1.4
+               , mvar-lock >=0.1 && <0.2
                , optparse-generic >=1.3.0 && <1.4
+               , random >=1.1 && <1.2
                , servant-server >=0.15 && <0.16
                , servant-websockets >=1.1.0 && <1.2
                , stm >=2.5.0.0 && <2.6
@@ -34,4 +36,4 @@ executable lets-try-purescript
                , websockets >=0.12.5.2 && <0.12.6
   hs-source-dirs:      .
   default-language:    Haskell2010
-  ghc-options:    -Wno-missing-methods -Wno-missing-home-modules -Wno-duplicate-exports
+  ghc-options:  -Wno-missing-methods -Wno-missing-home-modules -Wno-duplicate-exports
