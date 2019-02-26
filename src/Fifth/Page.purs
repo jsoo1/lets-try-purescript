@@ -1,7 +1,7 @@
 module Fifth.Page (Query(..), component) where
 
 import CSS (color, display, flex)
-import CSS.Color (black, red)
+import CSS.Color (black)
 import CSS.Flexbox (flexDirection, row)
 import CSS.Font (fontSize)
 import CSS.Overflow (overflowY, scroll)
@@ -38,7 +38,7 @@ data Query a = GetAllUsers a
              | HandleMessages Messages.Message a
 
 type State =
-  { users :: Maybe (Either Err (Map Username User))
+  { users :: Maybe (Map Username User)
   , loadingUsers :: Boolean
   , session :: Maybe User
   }
@@ -91,7 +91,7 @@ render s =
           [ HH.text "who all is here:"
           ]
         , case s.users of
-             Just (Right users) ->
+             Just users ->
                HH.div [ style $ overflowY scroll ] $
                (pure (HH.slot' CP.cp1)
                 <*> username
@@ -99,15 +99,6 @@ render s =
                 <*> pure <<< identity
                 <*> HE.input <<< HandleUser <<< username)
                <$> Array.fromFoldable users
-             Just (Left e) ->
-               HH.div [ style Style.paragraph ]
-               [ HH.div []
-                 [ HH.text "something went wrong:"
-                 ]
-               , HH.div [ style $ color red ]
-                 [ HH.text $ show e
-                 ]
-               ]
              Nothing ->
                HH.p [ style Style.paragraph ]
                [ HH.text "no one is here, yet. add your github to the list!"
@@ -122,7 +113,7 @@ render s =
          CP.cp4
          unit
          Messages.component
-         { session : user, users : maybe Map.empty identity $ hush =<< s.users }
+         { session : user, users : maybe Map.empty identity s.users }
          (HE.input HandleMessages)
        Nothing ->
          HH.slot' CP.cp2 unit Github.component unit $ HE.input HandleGithub
@@ -137,43 +128,47 @@ eval q =
     GetAllUsers next -> do
       H.modify_ (_ { loadingUsers = true })
       response <- H.liftAff $ get "/user/all"
-      H.modify_ (_ { loadingUsers = false
-                   , users = Just $ decode response
-                   })
+      case decode response of
+        Left e -> H.liftEffect $ Console.log $ show e
+        Right us -> H.modify_ (_ { loadingUsers = false
+                                 , users = Just us
+                                 })
       pure next
     NewMessage msg next -> do
       case msg of
         Left e -> H.liftEffect $ Console.log $ show e
         Right m -> void $ H.query' CP.cp4 unit $ H.action $ Messages.NewMessage m
       pure next
-    NewUser message next -> do
-      H.modify_ (\s -> s { users =
-                       pure $ pure (pure Map.insert <*> username <*> identity)
-                       <*> message
-                       <*> maybe (pure Map.empty) identity s.users
-                       })
+    NewUser user next -> do
+      case user of
+        Left e -> H.liftEffect $ Console.log $ show e
+        Right u -> do
+          H.modify_ (\s -> s { users = pure
+                             $ Map.insert (username u) u
+                             $ maybe Map.empty identity s.users
+                             })
+          void $ H.query' CP.cp4 unit $ H.action $ Messages.NewUser u
       pure next
     HandleGithub (Github.Selected user) next -> do
       H.modify_ (_ { loadingUsers = true })
       response <- H.liftAff $ post "/user" encodeUser user
-      H.modify_ (\s ->
-                  s { loadingUsers = false
-                    , users =
-                      pure $ pure (pure Map.insert <*> username <*> identity)
-                      <*> decode response
-                      <*> maybe (pure Map.empty) identity s.users
-                    })
+      case decode response of
+        Left e -> H.liftEffect $ Console.log $ show e
+        Right u -> H.modify_ (\s ->
+                   s { loadingUsers = false
+                     , users = pure $ Map.insert (username u) u $ maybe Map.empty identity s.users
+                     })
       H.modify_ (_ { session = hush $ decode response })
       pure next
     HandleCurrentUser (User.Fetched response) next -> pure next
     HandleUser name (User.Fetched response) next -> do
       s <- H.get
-      H.modify_ (_ { users = pure $
-                        case s.users of
-                          Nothing ->
-                            pure (\u -> Map.insert name u Map.empty) <*> response
-                          Just users ->
-                            pure (Map.insert name) <*> response <*> users
-                   })
+      case response of
+        Left e -> H.liftEffect $ Console.log $ show e
+        Right u -> do
+          H.modify_ (_ { users = pure $ Map.insert (username u) u $ maybe Map.empty identity s.users 
+          
+                        })
+          void $ H.query' CP.cp4 unit $ H.action $ Messages.NewUser u
       pure next
     HandleMessages (Messages.Sent m) next -> pure next

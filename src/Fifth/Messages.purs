@@ -40,6 +40,7 @@ import Web.UIEvent.KeyboardEvent as Key
 
 data Query a = GetAllMessages a
              | NewMessage Msg a
+             | NewUser User a
              | SetMessage String a
              | Send a
 
@@ -138,7 +139,11 @@ render s =
            Style.row
            alignItems $ AlignItemsValue $ value "center"
       ]
-      [ HH.div [ style Style.col ]
+      [ HH.div
+        [ style do
+             Style.col
+             justifyContent $ JustifyContentValue $ value "flex-start"
+        ]
         [ avatar $ (\(User x) -> x.avatarUrl) =<< u
         ]
       , HH.div
@@ -209,6 +214,9 @@ eval q =
       messagesEl <- H.getHTMLElementRef messagesRef
       for_ messagesEl (H.liftEffect <<< scrollToBottom)
       pure next
+    NewUser u next -> do
+      H.modify_ (\s -> s { users = Map.insert (username u) u s.users } )
+      pure next
     SetMessage s next -> do
       H.modify_ (_ { message = s })
       pure next
@@ -245,3 +253,4 @@ eval q =
         offsetHeight <- HEL.offsetHeight el
         EL.setScrollTop (scrollHeight) $ HEL.toElement el
       
+
