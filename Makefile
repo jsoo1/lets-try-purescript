@@ -49,7 +49,7 @@ server: ensure-bin
 ifeq ($(shell uname),Darwin)
 	cabal new-build
 else
-	ghc -Wno-duplicate-exports -Wno-missing-methods -hidir $(BUILD) -odir $(BUILD) -o $(BIN)/$(BINARY_NAME) Main.hs
+	ghc -Wno-duplicate-exports -Wno-missing-methods -threaded -hidir $(BUILD) -odir $(BUILD) -o $(BIN)/$(BINARY_NAME) Main.hs
 endif
 
 ensure-bin:
